@@ -326,6 +326,15 @@
 
         <!-- TAB: Настройки -->
         <div class="profile-tab-pane" id="ptab-settings" style="display:none">
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Тема оформления</div></div>
+          <div style="margin:0 16px 20px">
+            <div class="theme-picker" id="theme-picker">
+              <button class="theme-btn" data-t="light"  onclick="setTheme('light')">Светлая</button>
+              <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')">Тёмная</button>
+              <button class="theme-btn" data-t="system" onclick="setTheme('system')">Авто</button>
+            </div>
+          </div>
+
           <div style="margin:16px 16px 10px"><div class="achiev-title">Голос напоминаний</div></div>
           <div class="char-picker-row" id="char-picker-row"></div>
 

@@ -72,7 +72,11 @@ export function switchProfileTab(tab) {
     pane.style.display = active ? '' : 'none';
     btn.classList.toggle('active', active);
   });
-  if (tab === 'settings') { renderCharPicker(); updateNotifToggle(); updateBioToggle(); renderFixedExps(); renderSavingsGoals(); }
+  if (tab === 'settings') {
+    renderCharPicker(); updateNotifToggle(); updateBioToggle(); renderFixedExps(); renderSavingsGoals();
+    const t = localStorage.getItem('notch-theme') || 'system';
+    document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.t === t));
+  }
   if (tab === 'friends')  { renderFriendsTab(); }
 }
 
