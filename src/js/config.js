@@ -1,6 +1,7 @@
-/* ── Supabase credentials — replaced by netlify.toml at build time ── */
+/* ── Supabase credentials — replaced by vercel build at deploy time ── */
 export const SUPABASE_URL      = '__SUPABASE_URL__';
 export const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+export const VAPID_PUBLIC_KEY  = '__VAPID_PUBLIC_KEY__';
 
 /* ── Expense categories ── */
 export const CATS = [

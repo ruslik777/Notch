@@ -10,6 +10,7 @@ import {
   updateNotifToggle, toggleNotifications,
   renderCharPicker, setNotifChar,
   updateBioToggle, toggleBioFromProfile,
+  refreshPushSubscription,
 } from './notifications.js';
 import {
   openModal, closeModal, handleOverlayClick, selectCat, validateForm, buildCatGrid,
@@ -164,6 +165,7 @@ async function init() {
         renderAll();
         loadLeague();
         scheduleStreakReminder();
+        setTimeout(refreshPushSubscription, 2000);
         if (urlAction === 'add-expense') setTimeout(openModal, 300);
       };
       if (hasPin()) {

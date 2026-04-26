@@ -47,6 +47,22 @@ self.addEventListener('message', event => {
   }
 });
 
+self.addEventListener('push', event => {
+  let data = { title: 'Notch', body: 'Не забудь записать трату!', tag: 'notch-push' };
+  try { data = { ...data, ...event.data?.json() }; } catch(e) {}
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag,
+      renotify: true,
+      vibrate: [200, 100, 200],
+      data: { url: '/app.html' },
+    })
+  );
+});
+
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(

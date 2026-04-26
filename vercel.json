@@ -1,5 +1,5 @@
 {
-  "buildCommand": "sed -i 's|__SUPABASE_URL__|'\"$SUPABASE_URL\"'|g' src/js/config.js && sed -i 's|__SUPABASE_ANON_KEY__|'\"$SUPABASE_ANON_KEY\"'|g' src/js/config.js",
+  "buildCommand": "sed -i 's|__SUPABASE_URL__|'\"$SUPABASE_URL\"'|g' src/js/config.js && sed -i 's|__SUPABASE_ANON_KEY__|'\"$SUPABASE_ANON_KEY\"'|g' src/js/config.js && sed -i 's|__VAPID_PUBLIC_KEY__|'\"$VAPID_PUBLIC_KEY\"'|g' src/js/config.js",
   "outputDirectory": ".",
   "framework": null,
   "headers": [

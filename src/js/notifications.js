@@ -1,11 +1,70 @@
-import { NOTIF_CHARS } from './config.js';
-import { STATE, DB } from './api.js';
+import { NOTIF_CHARS, VAPID_PUBLIC_KEY } from './config.js';
+import { STATE, DB, AUTH, supa } from './api.js';
 import { toDay } from './format.js';
 
 export async function initSW() {
   if (!('serviceWorker' in navigator)) return;
-  try { await navigator.serviceWorker.register('/sw.js'); } catch(e) { console.warn('SW',e); }
+  try { await navigator.serviceWorker.register('/sw.js'); } catch(e) { console.warn('SW', e); }
 }
+
+/* ── Push subscription ── */
+
+function _urlB64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+export async function refreshPushSubscription() {
+  if (localStorage.getItem('notif_enabled') !== '1') return;
+  if (!('PushManager' in window) || !AUTH.uid) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlB64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    if (sub) {
+      await supa.from('push_subscriptions').upsert(
+        { user_id: AUTH.uid, subscription: sub.toJSON(), updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+  } catch(e) { console.warn('push refresh', e); }
+}
+
+async function _subscribePush() {
+  if (!('PushManager' in window) || !AUTH.uid) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const sub = existing || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: _urlB64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    if (sub) {
+      await supa.from('push_subscriptions').upsert(
+        { user_id: AUTH.uid, subscription: sub.toJSON(), updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    }
+  } catch(e) { console.warn('push subscribe', e); }
+}
+
+async function _unsubscribePush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+    if (AUTH.uid) await supa.from('push_subscriptions').delete().eq('user_id', AUTH.uid);
+  } catch(e) { console.warn('push unsubscribe', e); }
+}
+
+/* ── Notif characters ── */
 
 export function getNotifChar() { return localStorage.getItem('notif_char') || 'bro'; }
 
@@ -43,43 +102,21 @@ export function updateNotifToggle() {
 
 export async function toggleNotifications() {
   const on = localStorage.getItem('notif_enabled') === '1';
-  if (on) { localStorage.setItem('notif_enabled','0'); updateNotifToggle(); return; }
+  if (on) {
+    localStorage.setItem('notif_enabled', '0');
+    updateNotifToggle();
+    await _unsubscribePush();
+    return;
+  }
   if (!('Notification' in window)) { alert('Уведомления не поддерживаются'); return; }
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') { alert('Разреши уведомления в настройках браузера'); return; }
-  localStorage.setItem('notif_enabled','1');
-  scheduleStreakReminder();
+  localStorage.setItem('notif_enabled', '1');
   updateNotifToggle();
+  await _subscribePush();
 }
 
-export function scheduleStreakReminder() { scheduleAllNotifications(); }
-
-export function scheduleAllNotifications() {
-  if (localStorage.getItem('notif_enabled') !== '1') return;
-  if (!('serviceWorker' in navigator)) return;
-  const user = DB.getUser(); if (!user) return;
-  const alreadyDone = user.lastEntryDate === toDay();
-  const now = new Date();
-  const items = [];
-  if (!alreadyDone) {
-    const slots = [
-      { h:9,  m:0,  slot:'morning' },
-      { h:20, m:0,  slot:'evening' },
-      { h:22, m:30, slot:'lastchance' },
-    ];
-    slots.forEach(({ h, m, slot }) => {
-      const t = new Date(now); t.setHours(h, m, 0, 0);
-      if (now < t) {
-        const msg = _notifMsg(slot);
-        items.push({ delay: t.getTime()-Date.now(), title: msg.title, body: msg.body, tag: 'notch-' + slot });
-      }
-    });
-  }
-  if (items.length === 0) return;
-  navigator.serviceWorker.ready.then(reg => {
-    reg.active?.postMessage({ type:'SCHEDULE_NOTIFS_V2', items });
-  });
-}
+export function scheduleStreakReminder() { /* legacy — сервер теперь шлёт сам */ }
 
 /* ── Biometric toggle in settings ── */
 
