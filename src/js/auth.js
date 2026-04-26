@@ -56,6 +56,10 @@ export async function submitAuth() {
     AUTH.uid   = result.data.user.id;
     AUTH.email = result.data.user.email;
 
+    if (result.data.session?.refresh_token && localStorage.getItem('bio_enabled') === '1') {
+      localStorage.setItem('bio_refresh', result.data.session.refresh_token);
+    }
+
     const hasProfile = await loadState();
     if (hasProfile && STATE.user?.onboardingDone) {
       const checked = checkStreak(STATE.user);
@@ -205,7 +209,22 @@ export async function loginWithBiometric() {
       }
     });
     if (!assertion) throw new Error('no assertion');
-    const { data: { session } } = await supa.auth.getSession();
+
+    // Try to restore session via stored refresh token (rotated on every use)
+    const storedRefresh = localStorage.getItem('bio_refresh');
+    let session = null;
+    if (storedRefresh) {
+      const { data: refreshData, error: refreshErr } = await supa.auth.refreshSession({ refresh_token: storedRefresh });
+      if (!refreshErr && refreshData.session) {
+        session = refreshData.session;
+        localStorage.setItem('bio_refresh', session.refresh_token);
+      }
+    }
+    if (!session) {
+      const { data: sessData } = await supa.auth.getSession();
+      session = sessData.session;
+    }
+
     if (session) {
       AUTH.uid   = session.user.id;
       AUTH.email = session.user.email;
@@ -222,7 +241,7 @@ export async function loginWithBiometric() {
         return;
       }
     }
-    document.getElementById('auth-error').textContent = 'Сессия истекла. Войди с паролем.';
+    document.getElementById('auth-error').textContent = 'Сессия истекла. Войди с паролем один раз.';
   } catch(e) {
     if (e.name !== 'NotAllowedError') {
       document.getElementById('auth-error').textContent = 'Биометрия не прошла. Попробуй с паролем.';
@@ -276,6 +295,8 @@ export async function enableBiometric() {
       localStorage.setItem('bio_cred_id', _buf2b64(cred.rawId));
       localStorage.setItem('bio_email', email);
       localStorage.removeItem('bio_pending_email');
+      const { data: { session: bioSess } } = await supa.auth.getSession();
+      if (bioSess?.refresh_token) localStorage.setItem('bio_refresh', bioSess.refresh_token);
     }
   } catch(e) { console.warn('bio setup', e); }
   if (overlay) overlay.classList.remove('show');
