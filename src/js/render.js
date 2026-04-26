@@ -386,34 +386,35 @@ export function renderProfile() {
   const achieved = checkAchievements();
 
   renderAvatarEl();
-  document.getElementById('p-name').textContent  = user.name;
+  document.getElementById('p-name').textContent = user.name;
   const badgeEl = document.getElementById('p-premium-badge');
   if (badgeEl) badgeEl.style.display = user.premium ? '' : 'none';
-  document.getElementById('p-email').textContent = AUTH.email || '';
 
   const lvl    = getLevel(user.xp || 0);
   const lvlNum = getLevelNum(user.xp || 0);
-  document.getElementById('p-level-txt').textContent  = `Уровень ${lvlNum} · ${lvl.name}`;
-  document.getElementById('p-level-name').textContent = lvl.name;
-  document.getElementById('p-xp-txt').textContent     = `${(user.xp || 0).toLocaleString('ru')} / ${lvl.next === Infinity ? '∞' : lvl.next.toLocaleString('ru')} XP`;
-  document.getElementById('p-xp-bar').style.transform = `scaleX(${lvl.progress})`;
+  const xp     = user.xp || 0;
 
   const joinDate  = user.joinDate ? new Date(user.joinDate) : new Date();
+  const joinYear  = joinDate.getFullYear();
   const daysInApp = Math.floor((Date.now() - joinDate.getTime()) / 86400000) + 1;
 
-  document.getElementById('p-stats').innerHTML = `
-    <div class="stat-box">
-      <div class="stat-box-num">${user.streak || 0}</div>
-      <div class="stat-box-lbl">стрик дней</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-num">${daysInApp}</div>
-      <div class="stat-box-lbl">дней в приложении</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-box-num">${exps.length}</div>
-      <div class="stat-box-lbl">записей всего</div>
-    </div>`;
+  const metaEl = document.getElementById('p-hero-meta');
+  if (metaEl) metaEl.textContent = `${user.notchId || ''} · В Notch с ${joinYear} года`;
+
+  const _set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  _set('p-hstat-streak', user.streak || 0);
+  _set('p-hstat-xp',     xp.toLocaleString('ru'));
+  _set('p-hstat-level',  lvlNum);
+  _set('p-ov-streak',    `${user.streak || 0} дн.`);
+  _set('p-ov-longest',   `${user.longestStreak || 0} дн.`);
+  _set('p-ov-days',      daysInApp);
+  _set('p-ov-records',   exps.length);
+
+  const lvlLblEl = document.getElementById('p-ov-level-lbl');
+  if (lvlLblEl) lvlLblEl.textContent = `УРОВЕНЬ ${lvlNum} · ${lvl.name.toUpperCase()}`;
+  _set('p-xp-txt',  `${xp.toLocaleString('ru')} XP`);
+  _set('p-xp-next', lvl.next === Infinity ? 'Макс. уровень' : `ещё ${(lvl.next - xp).toLocaleString('ru')} XP`);
+  document.getElementById('p-xp-bar').style.transform = `scaleX(${lvl.progress})`;
 
   const activeCur  = user.currency     || 'RUB';
   const baseCurId  = user.baseCurrency || 'RUB';
@@ -441,17 +442,11 @@ export function renderProfile() {
 
   document.getElementById('p-achievements').innerHTML = ACHIEVEMENTS.map(a => {
     const done = achieved.includes(a.id);
-    return `
-      <div class="achiev-item" ${done ? `onclick="shareAchievement('${a.id}')" style="cursor:pointer"` : ''}>
-        <div class="achiev-ico ${done ? 'done' : 'lock'}" style="font-size:14px;color:${done ? 'var(--ac)' : 'var(--t3)'}">
-          ${a.icon}
-        </div>
-        <div>
-          <div class="achiev-name" style="${done ? '' : 'color:var(--t2)'}">${a.name}</div>
-          <div class="achiev-desc">${done ? a.desc + ' — нажми чтобы поделиться' : a.desc}</div>
-        </div>
-        ${done ? '<span style="color:var(--ac);font-size:16px;margin-left:auto">✓</span>' : ''}
-      </div>`;
+    return `<div class="p-ach-card ${done ? 'done' : 'locked'}" ${done ? `onclick="shareAchievement('${a.id}')" style="cursor:pointer"` : ''}>
+      <div class="p-ach-badge">${a.icon}</div>
+      <div class="p-ach-card-name">${a.name}</div>
+      <div class="p-ach-card-desc">${done ? a.desc : 'Заблокировано'}</div>
+    </div>`;
   }).join('');
 
   renderFixedExps();
