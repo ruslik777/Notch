@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notch Playground</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700;800&family=Nunito:wght@500;600;700;800;900&family=Chakra+Petch:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Exo+2:wght@400;500;600;700;800;900&family=Rubik:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ── PALETTES ── */
+.palette-midnight { /* current */
+  --bg:   #0B0F14; --s1: #131920; --s2: #1C2432; --s3: #263040;
+  --ac:   #4ECCA3; --a10: rgba(78,204,163,.10); --a20: rgba(78,204,163,.22);
+  --text: #E6EDF8; --t2: #667796; --t3: #2A3550;
+  --gold: #E8A020; --red: #F07272;
+  --brd:  rgba(255,255,255,.07); --b2: rgba(255,255,255,.04);
+  --ring-glow: rgba(78,204,163,.35);
+}
+.palette-amber {
+  --bg:   #0D0B08; --s1: #161209; --s2: #1F1A0F; --s3: #2B2416;
+  --ac:   #F5A623; --a10: rgba(245,166,35,.10); --a20: rgba(245,166,35,.22);
+  --text: #F2EDE4; --t2: #7A6A4A; --t3: #3A2F1C;
+  --gold: #F5A623; --red: #E8604A;
+  --brd:  rgba(255,255,255,.07); --b2: rgba(255,255,255,.04);
+  --ring-glow: rgba(245,166,35,.4);
+}
+.palette-lime {
+  --bg:   #0A0C08; --s1: #111408; --s2: #181C0F; --s3: #222815;
+  --ac:   #B8F34A; --a10: rgba(184,243,74,.10); --a20: rgba(184,243,74,.22);
+  --text: #EDF2E4; --t2: #6A7A4A; --t3: #2A3318;
+  --gold: #F5C842; --red: #F07272;
+  --brd:  rgba(255,255,255,.07); --b2: rgba(255,255,255,.04);
+  --ring-glow: rgba(184,243,74,.35);
+}
+.palette-coral {
+  --bg:   #0E0908; --s1: #180F0D; --s2: #221613; --s3: #2E1F1B;
+  --ac:   #FF7A59; --a10: rgba(255,122,89,.10); --a20: rgba(255,122,89,.22);
+  --text: #F5EDE9; --t2: #7A5A50; --t3: #3A2420;
+  --gold: #F5C842; --red: #FF5C5C;
+  --brd:  rgba(255,255,255,.07); --b2: rgba(255,255,255,.04);
+  --ring-glow: rgba(255,122,89,.4);
+}
+
+/* ── FONTS ── */
+.font-oxanium { --font-display: 'Oxanium', sans-serif; --font-body: 'Nunito', sans-serif; }
+.font-chakra  { --font-display: 'Chakra Petch', sans-serif; --font-body: 'Manrope', sans-serif; }
+.font-exo     { --font-display: 'Exo 2', sans-serif; --font-body: 'Rubik', sans-serif; }
+.font-rajdhani{ --font-display: 'Rajdhani', sans-serif; --font-body: 'Work Sans', sans-serif; }
+
+/* ── RESET / BASE ── */
+body {
+  background: #060608;
+  min-height: 100vh;
+  font-family: var(--font-body, 'Nunito', sans-serif);
+  color: var(--text, #E6EDF8);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOOLBAR ── */
+.toolbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(6,6,8,.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 14px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.toolbar-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.toolbar-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: #444; width: 60px; flex-shrink: 0;
+}
+.pal-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: 2px solid transparent;
+  cursor: pointer; transition: transform .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.pal-btn:active { transform: scale(0.9); }
+.pal-btn.active { border-color: #fff; }
+.font-btn {
+  font-size: 12px; font-weight: 600; padding: 6px 12px;
+  border-radius: 8px; border: 1.5px solid rgba(255,255,255,.1);
+  background: transparent; color: rgba(255,255,255,.5); cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+  white-space: nowrap;
+}
+.font-btn.active {
+  border-color: rgba(255,255,255,.4);
+  background: rgba(255,255,255,.07);
+  color: #fff;
+}
+.copy-btn {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700; padding: 7px 14px;
+  border-radius: 8px; border: 1.5px solid rgba(255,255,255,.15);
+  background: transparent; color: rgba(255,255,255,.6); cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.copy-btn:hover { border-color: rgba(255,255,255,.4); color: #fff; }
+.copy-btn:active { transform: scale(0.96); }
+
+/* ── LAYOUT ── */
+.content {
+  padding: 32px 20px 80px;
+  display: flex; flex-direction: column; align-items: center; gap: 40px;
+}
+.section-title {
+  align-self: flex-start;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .12em; color: #333; margin-bottom: -30px;
+}
+
+/* ── PHONE SHELL ── */
+.phone {
+  width: 100%; max-width: 390px;
+  background: var(--bg);
+  border-radius: 36px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,.08), 0 32px 80px rgba(0,0,0,.8);
+}
+.phone-inner { padding: 0 0 16px; }
+
+/* ── COMPONENTS ── */
+
+/* Header */
+.home-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 36px 20px 4px;
+}
+.home-greeting { font-size: 12px; color: var(--t2); font-weight: 600; }
+.home-name {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+}
+.streak-badge { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.streak-num {
+  font-family: var(--font-display);
+  font-size: 24px; font-weight: 800; color: var(--ac);
+  line-height: 1; display: flex; align-items: center; gap: 4px;
+}
+.streak-lbl { font-size: 10px; color: var(--t2); }
+
+/* XP Ring */
+.xp-ring-section {
+  position: relative;
+  display: flex; justify-content: center; align-items: center;
+  margin: 8px 0 6px; height: 200px;
+}
+.xp-ring-svg { width: 200px; height: 200px; flex-shrink: 0; }
+.ring-track { fill: none; stroke: rgba(255,255,255,.05); stroke-width: 14; }
+.ring-fill {
+  fill: none; stroke: var(--ac); stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 490.09; stroke-dashoffset: 152.8;
+  transform: rotate(-90deg); transform-origin: 50% 50%;
+  transition: stroke-dashoffset .8s cubic-bezier(0.23,1,0.32,1);
+  filter: drop-shadow(0 0 8px var(--ring-glow));
+}
+.xp-ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; pointer-events: none;
+}
+.xp-ring-pts { font-size: 12px; font-weight: 700; color: var(--t2); margin-bottom: 2px; }
+.xp-ring-level {
+  font-family: var(--font-display);
+  font-size: 10px; font-weight: 700; color: var(--t2);
+  text-transform: uppercase; letter-spacing: .1em;
+}
+.xp-ring-name {
+  font-family: var(--font-display);
+  font-size: 36px; font-weight: 800; color: var(--ac);
+  letter-spacing: -.02em; line-height: 1;
+}
+.xp-ring-next { font-size: 10px; color: var(--t3); margin-top: 4px; }
+
+/* Chips */
+.stat-chips { display: flex; gap: 8px; margin: 0 16px 10px; }
+.stat-chip {
+  flex: 1; background: var(--s1); border: 1px solid var(--brd);
+  border-radius: 14px; padding: 11px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.stat-chip-val {
+  font-family: var(--font-display);
+  font-size: 22px; font-weight: 800; line-height: 1; transition: color .3s;
+}
+.stat-chip-lbl { font-size: 10px; color: var(--t2); font-weight: 600; }
+
+/* hcard */
+.hcard {
+  margin: 0 16px 10px;
+  background: var(--s1); border: 1px solid var(--brd);
+  border-radius: 16px; padding: 16px;
+}
+.hcard.primary { border-color: rgba(255,255,255,.12); background: var(--s2); padding: 18px 16px; }
+.hcard-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--t2); margin-bottom: 8px;
+}
+
+/* Balance */
+.bal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bal-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--t2); }
+.add-inc-btn {
+  font-size: 12px; font-weight: 700; color: var(--ac);
+  background: var(--a10); border: 1px solid var(--a20);
+  padding: 5px 12px; border-radius: 100px; cursor: pointer;
+  font-family: var(--font-body);
+}
+.bal-amount {
+  font-family: var(--font-display);
+  font-size: 40px; font-weight: 800; letter-spacing: -.02em;
+  line-height: 1; margin-bottom: 10px; color: var(--gold);
+}
+.bal-row { display: flex; gap: 20px; }
+.bsv { font-size: 13px; font-weight: 700; }
+.bsl { font-size: 11px; color: var(--t2); margin-top: 1px; }
+
+/* Today */
+.today-grid { display: grid; grid-template-columns: 1fr 1px 1fr; }
+.today-col { padding: 4px 0; }
+.today-col:last-child { padding-left: 16px; }
+.today-div { background: var(--brd); }
+.today-amt {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 800; letter-spacing: -.02em;
+  line-height: 1; margin-bottom: 2px;
+}
+.today-sub { font-size: 11px; color: var(--t2); }
+
+/* Quest */
+.q-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.q-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--t2); }
+.q-all { font-size: 12px; color: var(--ac); font-weight: 600; cursor: pointer; }
+.q-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.q-item + .q-item { border-top: 1px solid var(--b2); }
+.q-check {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+  background: var(--s3); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+}
+.q-check.done { background: var(--a10); color: var(--ac); }
+.q-text { flex: 1; }
+.q-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.q-prog { font-size: 11px; color: var(--t2); }
+.q-xp { font-size: 12px; font-weight: 700; color: var(--ac); }
+
+/* Tx */
+.txs-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--t2); margin-bottom: 8px; }
+.tx { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.tx + .tx { border-top: 1px solid var(--b2); }
+.tx-ico { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--s2); }
+.tx-name { font-size: 14px; font-weight: 600; }
+.tx-cat { font-size: 11px; color: var(--t2); }
+.tx-amt { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--red); }
+
+/* Nav */
+.bot-nav {
+  height: 64px; padding-top: 8px;
+  background: var(--s1);
+  border-top: 1px solid var(--brd);
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 4px; color: var(--t2); font-size: 10px; font-weight: 600;
+  font-family: var(--font-body);
+}
+.nav-item.active { color: var(--ac); }
+.nav-add {
+  width: 44px; height: 44px; background: var(--ac);
+  border-radius: 13px; display: flex; align-items: center; justify-content: center;
+  margin: -4px auto 0; box-shadow: 0 4px 16px var(--ring-glow);
+}
+
+/* ── ISOLATED COMPONENTS ── */
+.components-grid {
+  width: 100%; max-width: 700px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) { .components-grid { grid-template-columns: 1fr; } }
+.comp-wrap {
+  background: var(--bg, #0B0F14);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06);
+}
+.comp-wrap .hcard { margin: 16px; }
+.comp-wrap .stat-chips { margin: 16px; }
+.comp-wrap .xp-ring-section { margin-top: 16px; }
+.comp-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: #333; padding: 12px 16px 0;
+}
+</style>
+</head>
+<body class="palette-midnight font-oxanium">
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-row">
+    <span class="toolbar-label">Палитра</span>
+    <button class="pal-btn active" data-palette="midnight" style="background:#4ECCA3" title="Teal (текущий)"></button>
+    <button class="pal-btn" data-palette="amber"    style="background:#F5A623" title="Amber"></button>
+    <button class="pal-btn" data-palette="lime"     style="background:#B8F34A" title="Lime"></button>
+    <button class="pal-btn" data-palette="coral"    style="background:#FF7A59" title="Coral"></button>
+    <button class="copy-btn" id="copy-btn">Скопировать CSS</button>
+  </div>
+  <div class="toolbar-row">
+    <span class="toolbar-label">Шрифт</span>
+    <button class="font-btn active" data-font="oxanium">Oxanium + Nunito</button>
+    <button class="font-btn" data-font="chakra">Chakra Petch + Manrope</button>
+    <button class="font-btn" data-font="exo">Exo 2 + Rubik</button>
+    <button class="font-btn" data-font="rajdhani">Rajdhani + Work Sans</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <div class="section-title">Полный экран</div>
+
+  <!-- PHONE PREVIEW -->
+  <div class="phone">
+    <div class="phone-inner">
+
+      <div class="home-header">
+        <div>
+          <div class="home-greeting">Добрый вечер</div>
+          <div class="home-name">Руслан</div>
+        </div>
+        <div class="streak-badge">
+          <div class="streak-num">
+            <svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 3c0 0-6 5.5-6 10.5a6 6 0 0012 0c0-3-2-5-2-5s0 3-2.5 4c.5-4-1.5-6.5-1.5-9.5z" fill="#FF9500"/></svg>
+            23
+          </div>
+          <div class="streak-lbl">стрик</div>
+        </div>
+      </div>
+
+      <div class="xp-ring-section">
+        <svg class="xp-ring-svg" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="78"/>
+          <circle class="ring-fill" id="preview-ring" cx="100" cy="100" r="78"/>
+        </svg>
+        <div class="xp-ring-center">
+          <div class="xp-ring-pts">3 840 XP</div>
+          <div class="xp-ring-level">Ур. 12</div>
+          <div class="xp-ring-name">Воин</div>
+          <div class="xp-ring-next">ещё 160 до ур. 13</div>
+        </div>
+      </div>
+
+      <div class="stat-chips">
+        <div class="stat-chip">
+          <div class="stat-chip-val" id="chip-budget" style="color:var(--gold)">68%</div>
+          <div class="stat-chip-lbl">бюджет</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-val" style="color:var(--gold)">14 дн</div>
+          <div class="stat-chip-lbl">запас</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-val" style="color:var(--ac)">2/3</div>
+          <div class="stat-chip-lbl">цели</div>
+        </div>
+      </div>
+
+      <div class="hcard primary">
+        <div class="bal-hdr">
+          <span class="bal-lbl">апрель 2026</span>
+          <button class="add-inc-btn">+ Доход</button>
+        </div>
+        <div class="bal-amount">+17 600 ₽</div>
+        <div class="bal-row">
+          <div><div class="bsv" style="color:var(--gold)">80 000 ₽</div><div class="bsl">доходы</div></div>
+          <div><div class="bsv" style="color:var(--red)">62 400 ₽</div><div class="bsl">расходы</div></div>
+        </div>
+      </div>
+
+      <div class="hcard">
+        <div class="hcard-lbl">Сегодня</div>
+        <div class="today-grid">
+          <div class="today-col">
+            <div class="today-amt" style="color:var(--red)">2 350 ₽</div>
+            <div class="today-sub">потрачено</div>
+          </div>
+          <div class="today-div"></div>
+          <div class="today-col">
+            <div class="today-amt" style="color:var(--gold)">317 ₽</div>
+            <div class="today-sub">осталось</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hcard">
+        <div class="q-hdr">
+          <span class="q-title">Квесты</span>
+          <span class="q-all">Все</span>
+        </div>
+        <div class="q-item">
+          <div class="q-check done">✓</div>
+          <div class="q-text">
+            <div class="q-name">Запиши 3 траты подряд</div>
+            <div class="q-prog">Выполнено</div>
+          </div>
+          <div class="q-xp">+50 XP</div>
+        </div>
+        <div class="q-item">
+          <div class="q-check"></div>
+          <div class="q-text">
+            <div class="q-name">Удержи бюджет до конца недели</div>
+            <div class="q-prog">5 из 7 дней</div>
+          </div>
+          <div class="q-xp">+100 XP</div>
+        </div>
+      </div>
+
+      <div class="hcard">
+        <div class="txs-lbl">Сегодня</div>
+        <div class="tx">
+          <div class="tx-ico">🍕</div>
+          <div><div class="tx-name">Кафе</div><div class="tx-cat">14:32</div></div>
+          <div class="tx-amt">−1 200 ₽</div>
+        </div>
+        <div class="tx">
+          <div class="tx-ico">🚇</div>
+          <div><div class="tx-name">Транспорт</div><div class="tx-cat">09:15</div></div>
+          <div class="tx-amt">−150 ₽</div>
+        </div>
+      </div>
+
+      <div class="bot-nav">
+        <div class="nav-item active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="var(--a10)" stroke="var(--ac)" stroke-width="2"/></svg>
+          Главная
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="13,2 3,14 11,14 11,22 21,10 13,10" stroke="var(--t2)" stroke-width="2" fill="none"/></svg>
+          Квесты
+        </div>
+        <div class="nav-item">
+          <div class="nav-add">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="var(--bg)" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--t2)" stroke-width="2"/><path d="M12 7v5l3 3" stroke="var(--t2)" stroke-width="2" stroke-linecap="round"/></svg>
+          История
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="7" r="4" stroke="var(--t2)" stroke-width="2"/><path d="M4 21v-1a8 8 0 0116 0v1" stroke="var(--t2)" stroke-width="2"/></svg>
+          Профиль
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-title">Отдельные компоненты</div>
+
+  <!-- ISOLATED COMPONENTS -->
+  <div class="components-grid">
+
+    <div class="comp-wrap">
+      <div class="comp-label">XP Кольцо</div>
+      <div class="xp-ring-section">
+        <svg class="xp-ring-svg" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="78"/>
+          <circle class="ring-fill" cx="100" cy="100" r="78"/>
+        </svg>
+        <div class="xp-ring-center">
+          <div class="xp-ring-pts">3 840 XP</div>
+          <div class="xp-ring-level">Ур. 12</div>
+          <div class="xp-ring-name">Воин</div>
+          <div class="xp-ring-next">ещё 160 до ур. 13</div>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="comp-label">Чипы</div>
+      <div style="height:16px"></div>
+      <div class="stat-chips">
+        <div class="stat-chip">
+          <div class="stat-chip-val" style="color:var(--gold)">68%</div>
+          <div class="stat-chip-lbl">бюджет</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-val" style="color:var(--gold)">14 дн</div>
+          <div class="stat-chip-lbl">запас</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-val" style="color:var(--ac)">2/3</div>
+          <div class="stat-chip-lbl">цели</div>
+        </div>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="comp-label">Баланс</div>
+      <div class="hcard primary">
+        <div class="bal-hdr">
+          <span class="bal-lbl">апрель 2026</span>
+          <button class="add-inc-btn">+ Доход</button>
+        </div>
+        <div class="bal-amount">+17 600 ₽</div>
+        <div class="bal-row">
+          <div><div class="bsv" style="color:var(--gold)">80 000 ₽</div><div class="bsl">доходы</div></div>
+          <div><div class="bsv" style="color:var(--red)">62 400 ₽</div><div class="bsl">расходы</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="comp-label">Квест</div>
+      <div class="hcard" style="margin:16px">
+        <div class="q-hdr">
+          <span class="q-title">Квесты</span>
+          <span class="q-all">Все</span>
+        </div>
+        <div class="q-item">
+          <div class="q-check done">✓</div>
+          <div class="q-text">
+            <div class="q-name">Запиши 3 траты подряд</div>
+            <div class="q-prog">Выполнено</div>
+          </div>
+          <div class="q-xp">+50 XP</div>
+        </div>
+        <div class="q-item">
+          <div class="q-check"></div>
+          <div class="q-text">
+            <div class="q-name">Удержи бюджет</div>
+            <div class="q-prog">5 из 7 дней</div>
+          </div>
+          <div class="q-xp">+100 XP</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="comp-label">Транзакции</div>
+      <div class="hcard" style="margin:16px">
+        <div class="txs-lbl">Сегодня</div>
+        <div class="tx">
+          <div class="tx-ico">🍕</div>
+          <div><div class="tx-name">Кафе</div><div class="tx-cat">14:32</div></div>
+          <div class="tx-amt">−1 200 ₽</div>
+        </div>
+        <div class="tx">
+          <div class="tx-ico">🚇</div>
+          <div><div class="tx-name">Транспорт</div><div class="tx-cat">09:15</div></div>
+          <div class="tx-amt">−150 ₽</div>
+        </div>
+        <div class="tx">
+          <div class="tx-ico">🛒</div>
+          <div><div class="tx-name">Продукты</div><div class="tx-cat">08:40</div></div>
+          <div class="tx-amt">−1 000 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comp-wrap">
+      <div class="comp-label">Навбар</div>
+      <div class="bot-nav" style="margin-top:16px">
+        <div class="nav-item active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="var(--a10)" stroke="var(--ac)" stroke-width="2"/></svg>
+          Главная
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="13,2 3,14 11,14 11,22 21,10 13,10" stroke="var(--t2)" stroke-width="2" fill="none"/></svg>
+          Квесты
+        </div>
+        <div class="nav-item">
+          <div class="nav-add">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="var(--bg)" stroke-width="2.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--t2)" stroke-width="2"/><path d="M12 7v5l3 3" stroke="var(--t2)" stroke-width="2" stroke-linecap="round"/></svg>
+          История
+        </div>
+        <div class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="7" r="4" stroke="var(--t2)" stroke-width="2"/><path d="M4 21v-1a8 8 0 0116 0v1" stroke="var(--t2)" stroke-width="2"/></svg>
+          Профиль
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PALETTES = {
+  midnight: { ac:'#4ECCA3', bg:'#0B0F14', s1:'#131920', s2:'#1C2432', text:'#E6EDF8', t2:'#667796', gold:'#E8A020', red:'#F07272' },
+  amber:    { ac:'#F5A623', bg:'#0D0B08', s1:'#161209', s2:'#1F1A0F', text:'#F2EDE4', t2:'#7A6A4A', gold:'#F5A623', red:'#E8604A' },
+  lime:     { ac:'#B8F34A', bg:'#0A0C08', s1:'#111408', s2:'#181C0F', text:'#EDF2E4', t2:'#6A7A4A', gold:'#F5C842', red:'#F07272' },
+  coral:    { ac:'#FF7A59', bg:'#0E0908', s1:'#180F0D', s2:'#221613', text:'#F5EDE9', t2:'#7A5A50', gold:'#F5C842', red:'#FF5C5C' },
+};
+const FONTS = {
+  oxanium:  { display:'Oxanium',      body:'Nunito' },
+  chakra:   { display:'Chakra Petch', body:'Manrope' },
+  exo:      { display:'Exo 2',        body:'Rubik' },
+  rajdhani: { display:'Rajdhani',     body:'Work Sans' },
+};
+
+let currentPalette = 'midnight';
+let currentFont    = 'oxanium';
+
+function applyTheme() {
+  const b = document.body;
+  // remove old classes
+  Object.keys(PALETTES).forEach(k => b.classList.remove('palette-' + k));
+  Object.keys(FONTS).forEach(k => b.classList.remove('font-' + k));
+  b.classList.add('palette-' + currentPalette);
+  b.classList.add('font-' + currentFont);
+}
+
+// Palette buttons
+document.querySelectorAll('.pal-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pal-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPalette = btn.dataset.palette;
+    applyTheme();
+  });
+});
+
+// Font buttons
+document.querySelectorAll('.font-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFont = btn.dataset.font;
+    applyTheme();
+  });
+});
+
+// Copy CSS
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const p = PALETTES[currentPalette];
+  const f = FONTS[currentFont];
+  const css = `  /* Палитра: ${currentPalette} | Шрифты: ${f.display} + ${f.body} */
+  --bg:   ${p.bg};
+  --s1:   ${p.s1};
+  --s2:   ${p.s2};
+  --ac:   ${p.ac};
+  --a10:  ${p.ac}1A;
+  --a20:  ${p.ac}38;
+  --text: ${p.text};
+  --t2:   ${p.t2};
+  --gold: ${p.gold};
+  --red:  ${p.red};
+  --font-display: '${f.display}';
+  --font-body:    '${f.body}';`;
+  navigator.clipboard.writeText(css).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Скопировано!';
+    setTimeout(() => btn.textContent = 'Скопировать CSS', 2000);
+  });
+});
+</script>
+</body>
+</html>

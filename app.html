@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru" style="background:#0B0F14">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0B0F14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Notch</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234ECCA3'/><text x='16' y='23' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' fill='%230B0F14'>N</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/styles/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── SPLASH ── -->
+  <div id="splash">
+    <div class="splash-inner">
+      <div class="ob-logo-mark">N</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text)">Notch</div>
+    </div>
+  </div>
+
+  <!-- ── AUTH ── -->
+  <div id="auth" class="screen">
+    <div class="auth-logo">
+      <div class="ob-logo-mark">N</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text)">Notch</div>
+    </div>
+    <div class="auth-tagline">Учёт расходов,<br><span>который не бросишь.</span></div>
+
+    <div id="bio-auth-wrap" style="display:none">
+      <button class="bio-btn" id="bio-auth-btn" onclick="loginWithBiometric()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+        </svg>
+        <span id="bio-auth-label">Войти через Face ID</span>
+      </button>
+      <div class="bio-divider">или</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Войти</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Зарегистрироваться</button>
+      </div>
+
+      <div class="auth-input-group">
+        <input class="ob-input" id="auth-email" type="email" placeholder="Email"
+               autocomplete="email" inputmode="email" style="font-size:16px">
+        <input class="ob-input" id="auth-password" type="password" placeholder="Пароль (мин. 6 символов)"
+               autocomplete="current-password" style="font-size:16px">
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+
+      <button class="btn btn-primary" id="auth-submit" onclick="submitAuth()">Войти</button>
+    </div>
+
+    <div class="auth-note">Бесплатно · Без спама · Только для теста</div>
+  </div>
+
+  <!-- ── ONBOARDING ── -->
+  <div id="ob" class="screen">
+    <div class="ob-logo">
+      <div class="ob-logo-mark">N</div>
+      <div class="ob-logo-name">Notch</div>
+    </div>
+
+    <div class="ob-step active" id="ob1">
+      <div class="ob-dots">
+        <div class="ob-dot on"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+      </div>
+      <div class="ob-q">Как тебя зовут?</div>
+      <div class="ob-hint">Используется только внутри приложения</div>
+      <input class="ob-input" id="ob-name" type="text" placeholder="Имя" autocomplete="given-name" maxlength="20">
+      <div class="ob-spacer"></div>
+      <button class="btn btn-primary" onclick="obNext(1)" id="ob1-btn" disabled>Далее</button>
+    </div>
+
+    <div class="ob-step" id="ob2">
+      <div class="ob-dots">
+        <div class="ob-dot"></div>
+        <div class="ob-dot on"></div>
+        <div class="ob-dot"></div>
+      </div>
+      <div class="ob-q">Сколько зарабатываешь в месяц?</div>
+      <div class="ob-hint">Примерно — можно изменить потом</div>
+      <input class="ob-input" id="ob-income" type="number" inputmode="numeric" placeholder="80 000" min="1">
+      <div class="ob-spacer"></div>
+      <button class="btn btn-primary" onclick="obNext(2)" id="ob2-btn" disabled>Далее</button>
+    </div>
+
+    <div class="ob-step" id="ob3">
+      <div class="ob-dots">
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot on"></div>
+      </div>
+      <div class="ob-q">Сколько хочешь откладывать в месяц?</div>
+      <div class="ob-hint">Вычтем из дохода — получится бюджет</div>
+      <input class="ob-input" id="ob-savings" type="number" inputmode="numeric" placeholder="15 000" min="0">
+      <div class="ob-spacer"></div>
+      <button class="btn btn-primary" onclick="obFinish()" id="ob3-btn">Начнём!</button>
+    </div>
+  </div>
+
+  <!-- ── MAIN APP ── -->
+  <div id="main" class="screen">
+    <div class="tab-content" id="tab-content">
+
+      <!-- HOME -->
+      <div class="tab-pane active" id="pane-home">
+        <div class="home-scroll">
+
+          <div class="home-header">
+            <div>
+              <div class="home-greeting" id="h-greeting">Привет</div>
+              <div class="home-name" id="h-name">—</div>
+            </div>
+            <div class="streak-badge">
+              <div class="streak-num" id="h-streak">0</div>
+              <div class="streak-lbl">стрик дней</div>
+            </div>
+          </div>
+
+          <!-- XP Ring -->
+          <div class="xp-ring-section">
+            <svg class="xp-ring-svg" viewBox="0 0 200 200">
+              <circle class="ring-track" cx="100" cy="100" r="78"/>
+              <circle class="ring-fill" id="h-ring-fill" cx="100" cy="100" r="78"/>
+            </svg>
+            <div class="xp-ring-center">
+              <div class="xp-ring-pts" id="h-xp-pts-ring">0 XP</div>
+              <div class="xp-ring-level" id="h-level-num">Ур. 1</div>
+              <div class="xp-ring-name" id="h-level-name">Новичок</div>
+              <div class="xp-ring-next" id="h-xp-next-text"></div>
+            </div>
+          </div>
+
+          <!-- Stat chips -->
+          <div class="stat-chips">
+            <div class="stat-chip">
+              <div class="stat-chip-val" id="h-chip-budget" style="color:var(--ac)">—</div>
+              <div class="stat-chip-lbl">бюджет</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-val" id="h-chip-days" style="color:var(--gold)">—</div>
+              <div class="stat-chip-lbl">запас дней</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-val" id="h-chip-goals" style="color:var(--ac)">—</div>
+              <div class="stat-chip-lbl">цели</div>
+            </div>
+          </div>
+
+          <!-- Budget alert -->
+          <div class="budget-alert" id="h-budget-alert" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span id="h-budget-alert-text"></span>
+          </div>
+
+          <!-- Balance card -->
+          <div class="hcard hcard-primary">
+            <div class="balance-hdr">
+              <span class="balance-lbl" id="h-bal-month">Баланс</span>
+              <button class="add-income-btn" onclick="openIncomeModal()">+ Доход</button>
+            </div>
+            <div class="balance-amount" id="h-bal-amount">0 ₽</div>
+            <div class="balance-row">
+              <div>
+                <div class="balance-stat-val inc" id="h-bal-inc">0 ₽</div>
+                <div class="balance-stat-lbl">доходы</div>
+              </div>
+              <div>
+                <div class="balance-stat-val exp" id="h-bal-exp">0 ₽</div>
+                <div class="balance-stat-lbl">расходы</div>
+              </div>
+              <div id="h-bal-fixed-wrap" style="display:none">
+                <div class="balance-stat-val" style="color:var(--t2)" id="h-bal-fixed">0 ₽</div>
+                <div class="balance-stat-lbl">обязат.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Today card -->
+          <div class="hcard">
+            <div class="hcard-label">Сегодня</div>
+            <div class="today-grid">
+              <div class="today-col">
+                <div class="today-amt" id="h-today-spent">0 ₽</div>
+                <div class="today-sub">потрачено</div>
+              </div>
+              <div class="today-col-div"></div>
+              <div class="today-col">
+                <div class="today-amt positive" id="h-today-left">—</div>
+                <div class="today-sub" id="h-today-sub">осталось на день</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quests mini list -->
+          <div class="hcard">
+            <div class="quests-header">
+              <span class="quests-title">Квесты</span>
+              <span class="quests-all" onclick="switchTab('quests')">Все</span>
+            </div>
+            <div id="h-quests"></div>
+          </div>
+
+          <!-- Recent transactions -->
+          <div class="hcard">
+            <div class="txs-title">Записи сегодня</div>
+            <div id="h-txs"></div>
+          </div>
+
+          <!-- Analytics -->
+          <div class="hcard" id="analytics-card" style="display:none">
+            <div class="hcard-label">Расходы по категориям</div>
+            <div class="analytics-period-tabs">
+              <button class="ap-tab"        id="ap-month"     onclick="setAnalyticsPeriod('month')">Месяц<span class="ap-tab-lock">✦</span></button>
+              <button class="ap-tab active" id="ap-week"      onclick="setAnalyticsPeriod('week')">Неделя</button>
+              <button class="ap-tab"        id="ap-prevmonth" onclick="setAnalyticsPeriod('prevmonth')">Прошлый<span class="ap-tab-lock">✦</span></button>
+            </div>
+            <div id="h-analytics"></div>
+          </div>
+
+          <!-- Smart insights -->
+          <div class="hcard" id="insights-card" style="display:none">
+            <div class="hcard-label">Умные инсайты</div>
+            <div id="insights-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="tab-pane" id="pane-history">
+        <div class="screen-header">История</div>
+        <div id="hist-content"></div>
+      </div>
+
+      <!-- QUESTS -->
+      <div class="tab-pane" id="pane-quests">
+        <div class="screen-header">Квесты</div>
+        <div id="quests-daily-section" class="q-section">
+          <div class="q-section-lbl">Ежедневные</div>
+          <div id="quests-daily"></div>
+        </div>
+        <div id="quests-weekly-section" class="q-section">
+          <div class="q-section-lbl">Еженедельный</div>
+          <div id="quests-weekly"></div>
+        </div>
+
+        <div id="quests-personal-section" class="q-section" style="display:none">
+          <div class="q-section-lbl">Персональный</div>
+          <div id="quests-personal"></div>
+        </div>
+
+        <div class="q-section">
+          <div class="league-header">
+            <div class="q-section-lbl" style="margin:0">Лига</div>
+            <div class="league-tier-badge bronze" id="league-tier-badge">Бронза</div>
+          </div>
+          <div id="league-board"><div class="league-loading">Загрузка...</div></div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="tab-pane" id="pane-profile">
+        <div class="profile-header">
+          <div class="av-ring-wrap frame-none" id="p-avatar-wrap" onclick="openAvatarPicker()">
+            <div class="profile-avatar" id="p-avatar">?</div>
+            <div class="av-edit-hint">✎</div>
+          </div>
+          <div class="profile-name" id="p-name">—</div>
+          <div id="p-premium-badge" style="display:none"><span class="premium-badge">✦ Pro</span></div>
+          <div class="profile-level" id="p-level-txt">Уровень 1 · Новичок</div>
+          <div class="profile-email" id="p-email"></div>
+          <button class="profile-settings-btn" onclick="openSettings()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Изменить
+          </button>
+        </div>
+
+        <div class="profile-tabs" style="font-size:11.5px">
+          <button class="profile-tab active" id="ptab-btn-me" onclick="switchProfileTab('me')">Я</button>
+          <button class="profile-tab" id="ptab-btn-friends" onclick="switchProfileTab('friends')">Друзья</button>
+          <button class="profile-tab" id="ptab-btn-settings" onclick="switchProfileTab('settings')">Настройки</button>
+          <button class="profile-tab" id="ptab-btn-data" onclick="switchProfileTab('data')">Данные</button>
+        </div>
+
+        <!-- TAB: Я -->
+        <div class="profile-tab-pane" id="ptab-me">
+          <div class="profile-xp">
+            <div class="profile-xp-row">
+              <span id="p-level-name">Новичок</span>
+              <span id="p-xp-txt">0 / 800 XP</span>
+            </div>
+            <div class="pbar"><div class="pbar-fill" id="p-xp-bar" style="transform:scaleX(0)"></div></div>
+          </div>
+          <div class="stat-grid" id="p-stats"></div>
+          <div class="achiev-section">
+            <div class="achiev-title">Достижения</div>
+            <div id="p-achievements"></div>
+          </div>
+        </div>
+
+        <!-- TAB: Настройки -->
+        <div class="profile-tab-pane" id="ptab-settings" style="display:none">
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Голос напоминаний</div></div>
+          <div class="char-picker-row" id="char-picker-row"></div>
+
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Напоминания</div></div>
+          <div class="notif-row">
+            <div>
+              <div class="notif-row-title">Напоминание о стрике</div>
+              <div class="notif-row-sub" id="notif-row-sub">Утро, вечер и последний шанс</div>
+            </div>
+            <button class="notif-toggle-btn off" id="notif-toggle-btn" onclick="toggleNotifications()">Включить</button>
+          </div>
+
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Биометрия</div></div>
+          <div class="notif-row" style="margin-bottom:8px">
+            <div>
+              <div class="notif-row-title" id="bio-profile-label">Face ID / Touch ID</div>
+              <div class="notif-row-sub">Быстрый вход без пароля</div>
+            </div>
+            <button class="notif-toggle-btn" id="bio-profile-btn" onclick="toggleBioFromProfile()">Включить</button>
+          </div>
+
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Обязательные траты</div></div>
+          <div id="fixed-exps-list" style="margin:0 16px 12px"></div>
+          <div class="fixed-add-row" id="fixed-add-row">
+            <input class="fixed-name-input" id="fexp-name" type="text" placeholder="Название (Аренда...)" maxlength="30">
+            <input class="fixed-amt-input" id="fexp-amount" type="number" inputmode="decimal" placeholder="Сумма">
+            <button class="fixed-add-btn" onclick="addFixedExp()">+</button>
+          </div>
+
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Цели накоплений</div></div>
+          <div id="goals-list" style="margin:0 16px 8px"></div>
+          <div class="goal-new-row">
+            <input class="goal-new-name" id="goal-name" type="text" placeholder="Название цели" maxlength="30">
+            <input class="goal-new-amt" id="goal-target" type="number" inputmode="decimal" placeholder="Сумма">
+            <button class="goal-new-btn" onclick="addSavingsGoal()">+</button>
+          </div>
+
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Валюта</div></div>
+          <div class="currency-grid" id="currency-grid"></div>
+          <div style="height:32px"></div>
+        </div>
+
+        <!-- TAB: Друзья -->
+        <div class="profile-tab-pane" id="ptab-friends" style="display:none">
+          <div id="race-wrap"></div>
+          <div class="notch-id-badge">
+            <div>
+              <div style="font-size:10px;color:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Твой Notch ID</div>
+              <div class="notch-id-code" id="my-notch-id">——</div>
+            </div>
+            <button class="notch-id-copy" onclick="copyNotchId()">Скопировать</button>
+          </div>
+          <div style="margin:14px 16px 8px"><div class="achiev-title">Найти друга по ID</div></div>
+          <div class="friend-search-wrap">
+            <input class="friend-search-input" id="friend-search-input" type="text"
+              placeholder="ABC123" maxlength="6"
+              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+            <button class="friend-search-btn" onclick="searchFriend()">Найти</button>
+          </div>
+          <div class="friend-search-result" id="friend-search-result"></div>
+          <div id="friends-list-wrap"></div>
+          <div style="height:32px"></div>
+        </div>
+
+        <!-- TAB: Данные -->
+        <div class="profile-tab-pane" id="ptab-data" style="display:none">
+          <div class="profile-actions">
+            <div class="profile-action" onclick="exportCSV()">Экспорт данных (CSV)</div>
+            <div class="profile-action" onclick="signOut()">Выйти из аккаунта</div>
+            <div class="profile-action danger" onclick="confirmReset()">Сбросить все данные</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <nav class="bot-nav">
+      <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Главная
+      </div>
+      <div class="nav-item" id="nav-quests" onclick="switchTab('quests')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Квесты
+      </div>
+      <div class="nav-item" onclick="openModal()">
+        <div class="nav-add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </div>
+      </div>
+      <div class="nav-item" id="nav-history" onclick="switchTab('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 15"/>
+        </svg>
+        История
+      </div>
+      <div class="nav-item" id="nav-profile" onclick="switchTab('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        Профиль
+      </div>
+    </nav>
+  </div>
+
+  <!-- ── AVATAR PICKER ── -->
+  <div class="av-picker-overlay" id="av-picker-overlay" onclick="if(event.target===this)closeAvatarPicker()">
+    <div class="av-picker-sheet">
+      <div class="av-picker-handle"></div>
+      <div class="av-picker-title">Аватар</div>
+      <div class="av-picker-tabs">
+        <button class="av-picker-tab active" id="avt-btn-color" onclick="switchAvatarTab('color')">Цвет</button>
+        <button class="av-picker-tab"        id="avt-btn-style" onclick="switchAvatarTab('style')">Стиль</button>
+        <button class="av-picker-tab"        id="avt-btn-photo" onclick="switchAvatarTab('photo')">Фото</button>
+      </div>
+      <div class="av-picker-pane active" id="avt-pane-color">
+        <div class="color-swatches" id="av-color-swatches"></div>
+        <button class="av-save-btn" id="av-save-btn" onclick="saveAvatar()">Сохранить</button>
+      </div>
+      <div class="av-picker-pane" id="avt-pane-style">
+        <div class="preset-grid" id="av-preset-grid"></div>
+        <div class="frame-section-lbl">Рамка аватара</div>
+        <div class="frame-grid" id="av-frame-grid"></div>
+        <button class="av-save-btn" onclick="saveAvatar()">Сохранить</button>
+      </div>
+      <div class="av-picker-pane" id="avt-pane-photo">
+        <div class="av-photo-area">
+          <div class="av-photo-preview" id="av-photo-preview"></div>
+          <label class="av-photo-pick-btn" for="av-photo-input">Выбрать фото</label>
+          <input type="file" id="av-photo-input" accept="image/*" style="display:none" onchange="handleAvatarPhotoUpload(this)">
+        </div>
+        <button class="av-save-btn" onclick="saveAvatar()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREMIUM SCREEN ── -->
+  <div class="premium-overlay" id="premium-overlay" onclick="if(event.target===this)closePremiumScreen()">
+    <div class="premium-sheet">
+      <div class="premium-handle"></div>
+      <div class="premium-hero">
+        <div class="premium-hero-title">✦ Notch Pro</div>
+        <div class="premium-hero-sub">Больше возможностей для тех,<br>кто хочет контролировать финансы серьёзно.</div>
+      </div>
+      <div class="premium-features">
+        <div class="pf-row"><div class="pf-icon">📊</div><div class="pf-text"><strong>Аналитика за месяц и прошлый месяц</strong><span>Смотри тренды и сравнивай периоды</span></div></div>
+        <div class="pf-row"><div class="pf-icon">💡</div><div class="pf-text"><strong>Умные инсайты</strong><span>Автоматический анализ расходов и прогноз</span></div></div>
+        <div class="pf-row"><div class="pf-icon">🎯</div><div class="pf-text"><strong>Безлимитные цели накоплений</strong><span>В бесплатной версии — не более 3 целей</span></div></div>
+        <div class="pf-row"><div class="pf-icon">🔔</div><div class="pf-text"><strong>Все персонажи уведомлений</strong><span>Философ и Коллектор только для Pro</span></div></div>
+        <div class="pf-row"><div class="pf-icon">📥</div><div class="pf-text"><strong>Экспорт в CSV</strong><span>Выгружай данные в таблицы</span></div></div>
+        <div class="pf-row"><div class="pf-icon">🖼</div><div class="pf-text"><strong>Анимированные рамки аватара</strong><span>Золото, Неон, Огонь, Космос, Лёд</span></div></div>
+        <div class="pf-row"><div class="pf-icon">🏁</div><div class="pf-text"><strong>Дружеский забег</strong><span>Недельная гонка по XP с друзьями</span></div></div>
+      </div>
+      <div class="premium-contact">Для получения Pro напиши в поддержку или<br>попроси друга, у которого уже есть доступ.</div>
+      <button class="premium-close-btn" onclick="closePremiumScreen()">Понятно</button>
+    </div>
+  </div>
+
+  <!-- ── EXPENSE MODAL ── -->
+  <div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Записать трату</div>
+      <div class="quick-templates" id="quick-templates" style="display:none"></div>
+      <div class="amount-wrap">
+        <input class="amount-input" id="exp-amount" type="number"
+               inputmode="decimal" placeholder="0" min="1">
+        <span class="amount-currency" id="exp-currency-sym">₽</span>
+      </div>
+      <button class="scan-qr-btn" id="scan-qr-btn" onclick="openScanner()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Сканировать QR с чека
+      </button>
+      <div class="cat-label">Категория</div>
+      <div class="cat-grid" id="cat-grid"></div>
+      <input class="note-input" id="exp-note" type="text"
+             placeholder="Комментарий (необязательно)" maxlength="60">
+      <button class="btn btn-primary" onclick="saveExpense()" id="save-btn" disabled>Записать</button>
+    </div>
+  </div>
+
+  <!-- ── QR SCANNER ── -->
+  <div id="qr-scanner">
+    <div class="scanner-title">Наведи камеру на QR-код чека</div>
+    <div class="scanner-viewport">
+      <video id="qr-video" autoplay playsinline muted></video>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <div class="scan-frame">
+        <div class="scan-corner tl"></div>
+        <div class="scan-corner tr"></div>
+        <div class="scan-corner bl"></div>
+        <div class="scan-corner br"></div>
+        <div class="scan-line"></div>
+      </div>
+    </div>
+    <div class="scanner-status" id="scan-status">Ищем QR-код...</div>
+    <button class="scanner-cancel" onclick="closeScanner()">Отмена</button>
+  </div>
+
+  <!-- ── SETTINGS MODAL ── -->
+  <div class="modal-overlay" id="settings-modal" onclick="handleSettingsOverlay(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Настройки</div>
+      <div class="settings-field">
+        <label class="settings-label">Имя</label>
+        <input class="settings-input" id="s-name" type="text" placeholder="Имя" maxlength="20" autocomplete="given-name">
+      </div>
+      <div class="settings-field">
+        <label class="settings-label">Доход в месяц</label>
+        <input class="settings-input" id="s-income" type="number" inputmode="numeric" placeholder="80 000">
+      </div>
+      <div class="settings-field">
+        <label class="settings-label">Накопления в месяц</label>
+        <input class="settings-input" id="s-savings" type="number" inputmode="numeric" placeholder="15 000">
+        <p class="settings-hint">Бюджет = доход − накопления</p>
+      </div>
+      <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- ── INCOME MODAL ── -->
+  <div class="modal-overlay" id="income-modal" onclick="handleIncomeOverlayClick(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Добавить доход</div>
+      <div class="amount-wrap">
+        <input class="amount-input" id="inc-amount" type="number"
+               inputmode="decimal" placeholder="0" min="1">
+        <span class="amount-currency" id="inc-currency-sym">₽</span>
+      </div>
+      <div class="cat-label">Тип дохода</div>
+      <div class="income-type-grid" id="income-type-grid"></div>
+      <input class="note-input" id="inc-note" type="text"
+             placeholder="Комментарий (необязательно)" maxlength="60">
+      <button class="btn btn-primary" onclick="saveIncome()" id="inc-save-btn" disabled>Добавить</button>
+    </div>
+  </div>
+
+  <!-- ── INFO OVERLAY ── -->
+  <div class="info-overlay" id="info-overlay" onclick="closeInfo()">
+    <div class="info-sheet" onclick="event.stopPropagation()">
+      <div class="info-handle"></div>
+      <div class="info-title" id="info-title"></div>
+      <div class="info-body"  id="info-body"></div>
+      <button class="btn btn-primary" onclick="closeInfo()" style="margin-top:24px">Понятно</button>
+    </div>
+  </div>
+
+  <!-- XP Toast -->
+  <div class="xp-toast" id="xp-toast">
+    <span class="xp-toast-icon">+</span>
+    <span id="xp-toast-text">10 XP</span>
+  </div>
+
+  <!-- Level up overlay -->
+  <div class="levelup-overlay" id="levelup-overlay" onclick="closeLevelUp()">
+    <div class="levelup-inner">
+      <span class="levelup-star-icon">★</span>
+      <div class="levelup-eyebrow">Новый уровень!</div>
+      <div class="levelup-level-name" id="lu-level">Экономист</div>
+      <div class="levelup-sub" id="lu-sub" style="font-size:14px;color:var(--t2)"></div>
+      <button class="btn btn-primary levelup-btn" style="width:auto;padding:13px 32px;margin-top:8px" onclick="closeLevelUp()">
+        Вперёд!
+      </button>
+    </div>
+  </div>
+
+  <!-- BIO SETUP PROMPT -->
+  <div class="bio-setup-overlay" id="bio-setup-overlay">
+    <div class="bio-setup-sheet">
+      <div class="bio-setup-handle"></div>
+      <div class="bio-setup-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+        </svg>
+      </div>
+      <div class="bio-setup-title" id="bio-setup-title">Включить Face ID?</div>
+      <div class="bio-setup-desc">Чтобы в следующий раз не вводить пароль — просто поднеси телефон.</div>
+      <div class="bio-setup-btns">
+        <button class="btn btn-primary" onclick="enableBiometric()">Включить</button>
+        <div class="bio-setup-skip" onclick="dismissBioSetup()">Не сейчас</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOUR OVERLAY -->
+  <div class="tour-overlay" id="tour-overlay">
+    <div class="tour-sheet">
+      <div class="tour-handle"></div>
+      <div class="tour-eyebrow">Добро пожаловать!</div>
+      <div class="tour-title">Вот как работает Notch</div>
+      <div class="tour-steps">
+        <div class="tour-step">
+          <div class="tour-step-num">1</div>
+          <div class="tour-step-text">
+            <div class="tour-step-title">Жми + чтобы записать трату</div>
+            <div class="tour-step-desc">Каждая запись приносит XP и поддерживает стрик</div>
+          </div>
+        </div>
+        <div class="tour-step">
+          <div class="tour-step-num">2</div>
+          <div class="tour-step-text">
+            <div class="tour-step-title">Выполняй квесты за XP</div>
+            <div class="tour-step-desc">Ежедневные и еженедельные задания повышают уровень</div>
+          </div>
+        </div>
+        <div class="tour-step">
+          <div class="tour-step-num">3</div>
+          <div class="tour-step-text">
+            <div class="tour-step-title">Следи за балансом и целями</div>
+            <div class="tour-step-desc">Добавь цели накоплений в профиле и отмечай прогресс</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="closeTour()">Поехали!</button>
+    </div>
+  </div>
+
+  <!-- SHARE ACHIEVEMENT -->
+  <div class="share-overlay" id="share-overlay" onclick="closeShareOverlay()">
+    <div class="share-card-wrap" onclick="event.stopPropagation()">
+      <canvas id="share-canvas" width="320" height="320"></canvas>
+    </div>
+    <div class="share-btns">
+      <button class="share-btn primary"   id="share-btn-do">Поделиться</button>
+      <button class="share-btn secondary" onclick="closeShareOverlay()">Закрыть</button>
+    </div>
+    <div class="share-hint" id="share-hint"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script type="module" src="/src/js/app.js"></script>
+</body>
+</html>

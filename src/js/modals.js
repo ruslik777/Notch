@@ -1,0 +1,542 @@
+import { CATS, CAT_SVG, INCOME_TYPES, ACHIEVEMENTS } from './config.js';
+import { STATE, DB, AUTH, supa } from './api.js';
+import { _syncUser, _insertIncome, _insertExpense } from './api.js';
+import { toDay, fmt, getCur } from './format.js';
+import { addXP, incrementStreak, checkQuestCompletion, checkAchievements } from './gamification.js';
+import { renderSavingsGoals, renderFixedExps, renderAll } from './render.js';
+
+/* ── Expense modal ── */
+
+export let selectedCat  = null;
+export let editingExpId = null;
+
+export function openModal() {
+  selectedCat  = null;
+  editingExpId = null;
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-note').value   = '';
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('save-btn').disabled = true;
+  document.getElementById('exp-currency-sym').textContent = getCur().symbol;
+  document.querySelector('#modal .modal-title').textContent = 'Записать трату';
+  buildQuickTemplates();
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('exp-amount').focus(), 400);
+}
+
+export function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  if (editingExpId !== null) {
+    editingExpId = null;
+    document.getElementById('save-btn').textContent = 'Записать';
+    document.querySelector('#modal .modal-title').textContent = 'Записать трату';
+    selectedCat = null;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  }
+}
+
+export function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+export function selectCat(id) {
+  selectedCat = id;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('selected', b.dataset.cat === id));
+  validateForm();
+}
+
+export function validateForm() {
+  const amt = parseFloat(document.getElementById('exp-amount').value);
+  document.getElementById('save-btn').disabled = !(amt > 0 && selectedCat);
+}
+
+export function buildCatGrid() {
+  document.getElementById('cat-grid').innerHTML = CATS.map(c => `
+    <div class="cat-btn" data-cat="${c.id}" onclick="selectCat('${c.id}')">
+      <span class="cat-btn-ico">${CAT_SVG[c.id]}</span>
+      <span class="cat-btn-name">${c.name}</span>
+    </div>
+  `).join('');
+}
+
+export function openEditById(id) {
+  const exp = STATE.exps.find(e => String(e.id) === String(id));
+  if (exp) openEditModal(exp);
+}
+
+export function openEditModal(exp) {
+  editingExpId = exp.id;
+  document.getElementById('exp-amount').value = Number.isInteger(exp.amount) ? exp.amount : exp.amount.toFixed(2);
+  document.getElementById('exp-note').value   = exp.note || '';
+  document.getElementById('exp-currency-sym').textContent = getCur().symbol;
+  selectedCat = exp.catId;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('selected', b.dataset.cat === exp.catId));
+  document.getElementById('save-btn').disabled = false;
+  document.getElementById('save-btn').textContent = 'Сохранить';
+  document.querySelector('#modal .modal-title').textContent = 'Редактировать';
+  document.getElementById('modal').classList.add('open');
+}
+
+export async function saveExpense() {
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const note   = document.getElementById('exp-note').value.trim();
+  if (!amount || !selectedCat) return;
+
+  const cat = CATS.find(c => c.id === selectedCat);
+  const btn = document.getElementById('save-btn');
+
+  if (editingExpId !== null) {
+    btn.disabled = true;
+    const idx = STATE.exps.findIndex(e => e.id === editingExpId);
+    if (idx !== -1) {
+      STATE.exps[idx] = { ...STATE.exps[idx], amount, catId: selectedCat, catName: cat.name, icon: CAT_SVG[selectedCat] || '', note };
+      try {
+        await supa.from('expenses').update({ amount, cat_id: selectedCat, cat_name: cat.name, icon: CAT_SVG[selectedCat] || '', note })
+          .eq('id', editingExpId).eq('user_id', AUTH.uid);
+      } catch(e) { console.error('updateExpense', e); }
+    }
+    editingExpId = null;
+    closeModal();
+    renderAll();
+    return;
+  }
+
+  const expense = {
+    id:      Date.now(),
+    amount,
+    catId:   selectedCat,
+    catName: cat.name,
+    icon:    CAT_SVG[selectedCat] || '',
+    note,
+    date:    toDay(),
+  };
+
+  btn.disabled = true;
+
+  STATE.exps.push(expense);
+  _insertExpense(expense);
+
+  let user = DB.getUser();
+  user = incrementStreak(user);
+  DB.setUser(user);
+
+  addXP(10);
+
+  const wasFirstToday = STATE.exps.filter(e => e.date === toDay()).length === 1;
+  if (wasFirstToday && user.streak > 0) {
+    setTimeout(() => addXP(15), 800);
+  }
+
+  checkQuestCompletion(expense);
+  checkAchievements();
+
+  closeModal();
+  renderAll();
+}
+
+export async function deleteExpense(id) {
+  if (!confirm('Удалить эту запись?')) return;
+  STATE.exps = STATE.exps.filter(e => e.id !== id);
+  renderAll();
+  try {
+    await supa.from('expenses').delete().eq('id', id).eq('user_id', AUTH.uid);
+  } catch(e) { console.error('deleteExpense', e); }
+}
+
+/* ── Income modal ── */
+
+export let selectedIncomeType = null;
+
+export function buildIncomeTypeGrid() {
+  document.getElementById('income-type-grid').innerHTML = INCOME_TYPES.map(t => `
+    <div class="cat-btn" data-type="${t.id}" onclick="selectIncomeType('${t.id}')">
+      <span class="cat-btn-ico">${t.svg}</span>
+      <span class="cat-btn-name">${t.name}</span>
+    </div>
+  `).join('');
+}
+
+export function selectIncomeType(id) {
+  selectedIncomeType = id;
+  document.querySelectorAll('#income-type-grid .cat-btn').forEach(b => b.classList.toggle('selected', b.dataset.type === id));
+  validateIncomeForm();
+}
+
+export function validateIncomeForm() {
+  const amt = parseFloat(document.getElementById('inc-amount').value);
+  document.getElementById('inc-save-btn').disabled = !(amt > 0 && selectedIncomeType);
+}
+
+export function openIncomeModal() {
+  selectedIncomeType = null;
+  document.getElementById('inc-amount').value = '';
+  document.getElementById('inc-note').value   = '';
+  document.querySelectorAll('#income-type-grid .cat-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('inc-save-btn').disabled = true;
+  document.getElementById('inc-currency-sym').textContent = getCur().symbol;
+  document.getElementById('income-modal').classList.add('open');
+  setTimeout(() => document.getElementById('inc-amount').focus(), 400);
+}
+
+export function closeIncomeModal() {
+  document.getElementById('income-modal').classList.remove('open');
+}
+
+export function handleIncomeOverlayClick(e) {
+  if (e.target === document.getElementById('income-modal')) closeIncomeModal();
+}
+
+export async function saveIncome() {
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  const note   = document.getElementById('inc-note').value.trim();
+  if (!amount || !selectedIncomeType) return;
+
+  const type = INCOME_TYPES.find(t => t.id === selectedIncomeType);
+  const inc = {
+    id:       Date.now(),
+    amount,
+    type:     selectedIncomeType,
+    typeName: type.name,
+    note,
+    date:     toDay(),
+  };
+
+  const btn = document.getElementById('inc-save-btn');
+  btn.disabled = true;
+
+  STATE.incomes.push(inc);
+  _insertIncome(inc);
+
+  addXP(10);
+  closeIncomeModal();
+  renderAll();
+}
+
+/* ── Settings modal ── */
+
+export function openSettings() {
+  const user = DB.getUser(); if (!user) return;
+  document.getElementById('s-name').value    = user.name || '';
+  document.getElementById('s-income').value  = user.monthlyIncome || '';
+  const savings = Math.max(0, (user.monthlyIncome || 0) - (user.monthlyBudget || 0));
+  document.getElementById('s-savings').value = savings || '';
+  document.getElementById('settings-modal').classList.add('open');
+  setTimeout(() => document.getElementById('s-name').focus(), 350);
+}
+
+export function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+
+export function handleSettingsOverlay(e) {
+  if (e.target === document.getElementById('settings-modal')) closeSettings();
+}
+
+export async function saveSettings() {
+  const name    = document.getElementById('s-name').value.trim();
+  const income  = parseFloat(document.getElementById('s-income').value) || 0;
+  const savings = parseFloat(document.getElementById('s-savings').value) || 0;
+  if (!name || !income) return;
+  const budget = Math.max(Math.round(income - savings), Math.round(income * 0.05));
+  const btn = document.getElementById('settings-save-btn');
+  btn.disabled = true;
+  const user = DB.getUser();
+  user.name          = name;
+  user.monthlyIncome = income;
+  user.monthlyBudget = budget;
+  DB.setUser(user);
+  await _syncUser(user);
+  btn.disabled = false;
+  closeSettings();
+  renderAll();
+}
+
+/* ── Currency ── */
+
+export function setCurrency(id) {
+  const user = DB.getUser(); if (!user) return;
+  user.currency = id;
+  DB.setUser(user);
+  renderAll();
+}
+
+/* ── Savings goals ── */
+
+export function addSavingsGoal() {
+  const nameEl   = document.getElementById('goal-name');
+  const targetEl = document.getElementById('goal-target');
+  const name     = nameEl.value.trim();
+  const target   = parseFloat(targetEl.value);
+  if (!name || !target || target <= 0) return;
+  const user = DB.getUser(); if (!user) return;
+  const prem = window.isPremium ? window.isPremium() : false;
+  if (!prem && (user.savingsGoals || []).length >= 3) { if (window.showPremiumScreen) window.showPremiumScreen(); return; }
+  const entry = { id: Date.now().toString(36), name, target, saved: 0 };
+  user.savingsGoals = [...(user.savingsGoals || []), entry];
+  DB.setUser(user); nameEl.value = ''; targetEl.value = '';
+  _syncUser(user); renderSavingsGoals();
+}
+
+export function removeSavingsGoal(id) {
+  const user = DB.getUser(); if (!user) return;
+  user.savingsGoals = (user.savingsGoals || []).filter(g => g.id !== id);
+  DB.setUser(user); _syncUser(user); renderSavingsGoals();
+}
+
+export function depositSavingsGoal(id) {
+  const inp = document.getElementById('gdep-' + id); if (!inp) return;
+  const amount = parseFloat(inp.value); if (!amount || amount <= 0) return;
+  const user = DB.getUser(); if (!user) return;
+  const goal = (user.savingsGoals || []).find(g => g.id === id); if (!goal) return;
+  goal.saved = (goal.saved || 0) + amount;
+  DB.setUser(user); _syncUser(user); renderSavingsGoals();
+}
+
+/* ── Fixed expenses ── */
+
+export function addFixedExp() {
+  const nameEl = document.getElementById('fexp-name');
+  const amtEl  = document.getElementById('fexp-amount');
+  const name   = nameEl.value.trim();
+  const amount = parseFloat(amtEl.value);
+  if (!name || !amount || amount <= 0) return;
+  const user = DB.getUser(); if (!user) return;
+  const entry = { id: Date.now().toString(36), name, amount };
+  user.fixedExps = [...(user.fixedExps || []), entry];
+  DB.setUser(user);
+  nameEl.value = ''; amtEl.value = '';
+  _syncUser(user); renderFixedExps();
+  if (typeof window.renderHome === 'function') window.renderHome();
+}
+
+export function removeFixedExp(id) {
+  const user = DB.getUser(); if (!user) return;
+  user.fixedExps = (user.fixedExps || []).filter(e => e.id !== id);
+  DB.setUser(user); _syncUser(user); renderFixedExps();
+  if (typeof window.renderHome === 'function') window.renderHome();
+}
+
+/* ── Quick templates ── */
+
+export function buildQuickTemplates() {
+  const wrap = document.getElementById('quick-templates'); if (!wrap) return;
+  const exps = DB.getExps();
+  if (!exps.length) { wrap.style.display = 'none'; return; }
+  const seen = new Set(); const templates = [];
+  for (let i = exps.length - 1; i >= 0 && templates.length < 5; i--) {
+    const e = exps[i];
+    if (!seen.has(e.catId)) { seen.add(e.catId); templates.push(e); }
+  }
+  if (!templates.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = templates.map(e => `
+    <div class="quick-tpl" onclick="applyQuickTemplate('${e.catId}',${e.amount})">
+      <span class="quick-tpl-ico">${e.icon}</span>
+      <span class="quick-tpl-amt">${fmt(e.amount)}</span>
+      <span class="quick-tpl-name">${e.catName}</span>
+    </div>`).join('');
+}
+
+export function applyQuickTemplate(catId, amount) {
+  document.getElementById('exp-amount').value = Number.isInteger(amount) ? amount : amount.toFixed(2);
+  selectCat(catId);
+  validateForm();
+}
+
+/* ── Export CSV ── */
+
+export function exportCSV() {
+  const prem = window.isPremium ? window.isPremium() : false;
+  if (!prem) { if (window.showPremiumScreen) window.showPremiumScreen(); return; }
+  const exps = DB.getExps();
+  if (!exps.length) { alert('Нет данных для экспорта'); return; }
+  const rows = [['Дата', 'Категория', 'Сумма', 'Комментарий']];
+  [...exps].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
+    rows.push([e.date, e.catName, String(e.amount), e.note || '']);
+  });
+  const csv  = rows.map(r => r.map(v => '"' + v.replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: 'notch-' + toDay() + '.csv' });
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ── Info overlay ── */
+
+export function showInfo(key) {
+  const INFO = {
+    fa: {
+      title: 'Запас дней',
+      body: `Сколько дней ты проживёшь, если завтра не будет зарплаты.\n\n30 дней — есть подушка\n90 дней — можно спать спокойно\n180 дней — полная свобода`,
+    },
+    xp: {
+      title: 'Уровни и XP',
+      body: `Записываешь траты — получаешь XP. Набираешь XP — растёт уровень.\n\nЗапись траты → +10 XP\nПервая запись за день → +25 XP\nВыполнил квест → +50–200 XP\n\nЧем регулярнее ведёшь учёт, тем быстрее растёшь.`,
+    },
+  };
+  const item = INFO[key]; if (!item) return;
+  document.getElementById('info-title').textContent = item.title;
+  document.getElementById('info-body').textContent  = item.body;
+  document.getElementById('info-overlay').classList.add('open');
+}
+
+export function closeInfo() {
+  document.getElementById('info-overlay').classList.remove('open');
+}
+
+/* ── Tour ── */
+
+export function showTour() {
+  if (localStorage.getItem('tour_done')) return;
+  document.getElementById('tour-overlay').classList.add('show');
+}
+
+export function closeTour() {
+  localStorage.setItem('tour_done', '1');
+  document.getElementById('tour-overlay').classList.remove('show');
+}
+
+/* ── Share achievement ── */
+
+export function shareAchievement(achievId) {
+  const a    = ACHIEVEMENTS.find(x => x.id === achievId);
+  const user = DB.getUser(); if (!a || !user) return;
+  const canvas = document.getElementById('share-canvas');
+  const ctx    = canvas.getContext('2d');
+  const W = 320, H = 320;
+  ctx.fillStyle = '#0B0F14';
+  ctx.beginPath(); ctx.roundRect(0, 0, W, H, 20); ctx.fill();
+  const grd = ctx.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, W*0.45);
+  grd.addColorStop(0, 'rgba(78,204,163,0.18)'); grd.addColorStop(1, 'rgba(78,204,163,0)');
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 20); ctx.fill();
+  ctx.fillStyle = '#4ECCA3'; _shareRoundRect(ctx, W/2 - 16, 28, 32, 32, 9); ctx.fill();
+  ctx.fillStyle = '#0B0F14'; ctx.font = 'bold 20px Arial Black, sans-serif';
+  ctx.textAlign = 'center'; ctx.fillText('N', W/2, 52);
+  ctx.fillStyle = 'rgba(78,204,163,0.12)'; _shareRoundRect(ctx, W/2 - 36, 90, 72, 72, 18); ctx.fill();
+  ctx.fillStyle = '#4ECCA3'; ctx.font = 'bold 36px serif';
+  ctx.textAlign = 'center'; ctx.fillText(a.icon, W/2, 143);
+  ctx.fillStyle = '#E6EDF8'; ctx.font = 'bold 22px Arial, sans-serif';
+  ctx.fillText(a.name, W/2, 198);
+  ctx.fillStyle = '#667796'; ctx.font = '14px Arial, sans-serif'; ctx.fillText(a.desc, W/2, 222);
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; _shareRoundRect(ctx, W/2 - 70, 246, 140, 28, 8); ctx.fill();
+  ctx.fillStyle = '#4ECCA3'; ctx.font = 'bold 13px Arial, sans-serif';
+  ctx.fillText(user.name || 'Игрок', W/2, 265);
+  ctx.fillStyle = 'rgba(102,119,150,0.5)'; ctx.font = '11px Arial, sans-serif';
+  ctx.fillText('notch.app', W/2, 300);
+  const overlay  = document.getElementById('share-overlay');
+  const hint     = document.getElementById('share-hint');
+  const canShare = 'share' in navigator;
+  hint.textContent = canShare ? 'Нажми Поделиться для отправки в Stories' : 'Нажми Сохранить для скачивания';
+  document.getElementById('share-btn-do').textContent = canShare ? 'Поделиться' : 'Сохранить';
+  document.getElementById('share-btn-do').onclick = () => _doShare(achievId);
+  overlay.classList.add('show');
+}
+
+function _shareRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+
+async function _doShare(achievId) {
+  const canvas = document.getElementById('share-canvas');
+  const a = ACHIEVEMENTS.find(x => x.id === achievId);
+  if ('share' in navigator) {
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'notch-achievement.png', { type: 'image/png' });
+      const data = { title: 'Notch: ' + (a?.name || 'Достижение'), text: 'Получил достижение в Notch!', files: [file] };
+      if (navigator.canShare && navigator.canShare(data)) {
+        try { await navigator.share(data); } catch(e) {}
+      } else { _downloadCanvas(canvas); }
+    }, 'image/png');
+  } else { _downloadCanvas(canvas); }
+}
+
+function _downloadCanvas(canvas) {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png'); a.download = 'notch-achievement.png'; a.click();
+}
+
+export function closeShareOverlay() {
+  document.getElementById('share-overlay').classList.remove('show');
+}
+
+/* ── QR Scanner ── */
+
+let _scannerStream = null;
+let _scannerRAF    = null;
+let _scannerActive = false;
+
+export async function openScanner() {
+  if (!window.jsQR) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  try {
+    _scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 640 } }
+    });
+  } catch(e) {
+    const statusEl = document.getElementById('scan-status');
+    document.getElementById('qr-scanner').classList.add('open');
+    if (statusEl) { statusEl.textContent = 'Нет доступа к камере. Разреши в настройках.'; statusEl.classList.add('found'); }
+    setTimeout(closeScanner, 2500);
+    return;
+  }
+  const video = document.getElementById('qr-video');
+  video.srcObject = _scannerStream;
+  await video.play().catch(() => {});
+  document.getElementById('qr-scanner').classList.add('open');
+  const statusEl = document.getElementById('scan-status');
+  if (statusEl) { statusEl.textContent = 'Ищем QR-код...'; statusEl.classList.remove('found'); }
+  _scannerActive = true;
+  _scanFrame();
+}
+
+function _scanFrame() {
+  if (!_scannerActive) return;
+  const video  = document.getElementById('qr-video');
+  const canvas = document.getElementById('qr-canvas');
+  if (!video || !canvas) return;
+  if (video.readyState >= 2) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const d    = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = window.jsQR(d.data, d.width, d.height, { inversionAttempts: 'dontInvert' });
+    if (code) {
+      const amount = _parseReceiptQR(code.data);
+      if (amount && amount > 0) {
+        const statusEl = document.getElementById('scan-status');
+        if (statusEl) { statusEl.textContent = 'Сумма найдена: ' + amount + ' ' + getCur().symbol; statusEl.classList.add('found'); }
+        setTimeout(() => {
+          closeScanner();
+          document.getElementById('exp-amount').value = Number.isInteger(amount) ? amount : amount.toFixed(2);
+          validateForm();
+        }, 600);
+        return;
+      }
+    }
+  }
+  _scannerRAF = requestAnimationFrame(_scanFrame);
+}
+
+function _parseReceiptQR(str) {
+  const m = str.match(/(?:^|[?&])s=(\d+(?:[.,]\d{1,2})?)/i);
+  if (m) return parseFloat(m[1].replace(',', '.'));
+  return null;
+}
+
+export function closeScanner() {
+  _scannerActive = false;
+  if (_scannerRAF)    { cancelAnimationFrame(_scannerRAF); _scannerRAF = null; }
+  if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
+  document.getElementById('qr-scanner').classList.remove('open');
+}

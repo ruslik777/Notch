@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notch — концепт E (гибрид A+B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --bg:      #F8F4EE;
+  --surface: #FFFFFF;
+  --text1:   #18120A;
+  --text2:   #7A6858;
+  --text3:   #B09A7A;
+  --border:  #EDE5D8;
+  --border2: #F2EAE0;
+  --ac:      #E5601A;
+  --ac-dim:  #FFF0E0;
+  --ac-brd:  #F0C898;
+  --green:   #2A8040;
+  --red:     #C03020;
+}
+
+body {
+  background: #0A0A0A;
+  font-family: 'Figtree', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 52px 24px 80px;
+}
+
+.page-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px; font-weight: 700; color: #fff;
+  text-align: center; margin-bottom: 6px; letter-spacing: -.03em;
+}
+.page-sub {
+  font-size: 12px; color: #444; font-weight: 500;
+  text-align: center; margin-bottom: 14px;
+}
+.page-hint {
+  font-size: 11px; color: #555; font-weight: 500;
+  border: 1px solid #222; border-radius: 8px;
+  padding: 7px 16px; margin-bottom: 40px;
+}
+
+
+/* ═══════════════════════════════
+   PHONE SHELL
+═══════════════════════════════ */
+.phone {
+  width: 300px;
+  height: 620px;
+  border-radius: 42px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 9px #1C1C1C,
+    0 0 0 10px #2A2A2A,
+    0 60px 120px rgba(0,0,0,.95);
+  flex-shrink: 0;
+}
+
+.phone-scroll {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  scrollbar-width: none;
+}
+.phone-scroll::-webkit-scrollbar { display: none; }
+
+
+/* ─── STATUS BAR ─── */
+.status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px 0;
+  font-family: 'Figtree', sans-serif;
+  font-size: 11px; font-weight: 700; color: var(--text1);
+}
+.status-icons { display: flex; gap: 5px; align-items: center; }
+
+
+/* ─── HEADER ─── */
+.le-header {
+  padding: 10px 18px 0;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.le-greeting { font-size: 11px; color: var(--text3); font-weight: 600; margin-bottom: 3px; }
+.le-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px; font-weight: 700; color: var(--text1);
+  letter-spacing: -.04em; line-height: 1.1;
+}
+.le-streak-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--ac-dim); border: 1.5px solid var(--ac-brd);
+  border-radius: 100px; padding: 6px 11px;
+}
+.le-streak-n {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 14px; font-weight: 700; color: #C05010; letter-spacing: -.03em;
+}
+.le-streak-l { font-size: 10px; color: #C09070; font-weight: 600; }
+
+
+/* ─── XP STRIP ─── */
+.le-xp { margin: 18px 18px 0; }
+.le-xp-row {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px;
+}
+.le-xp-level {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 11px; font-weight: 700; color: var(--ac); letter-spacing: -.02em;
+}
+.le-xp-pts { font-size: 11px; font-weight: 600; color: var(--text3); }
+.le-xp-bar { height: 10px; background: var(--border); border-radius: 100px; overflow: hidden; }
+.le-xp-fill {
+  height: 100%; width: 96%;
+  background: var(--ac); border-radius: 100px;
+  transition: width 1s var(--ease-out);
+}
+.le-xp-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px; font-weight: 800; color: var(--text1);
+  letter-spacing: -.05em; margin-top: 7px; line-height: 1;
+}
+
+
+/* ─── STAT TILES ─── */
+.le-tiles {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin: 12px 12px 0;
+}
+.le-tile {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 12px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  cursor: pointer;
+  transition: transform 150ms var(--ease-out), border-color 150ms;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.le-tile:hover { border-color: #D5C5B0; }
+.le-tile:active { transform: scale(0.92); }
+.le-tile-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px; font-weight: 700; letter-spacing: -.04em; line-height: 1;
+}
+.le-tile-lbl { font-size: 10px; font-weight: 600; color: var(--text3); }
+/* tap hint dot */
+.le-tile::after {
+  content: '';
+  position: absolute; top: 8px; right: 9px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--border);
+}
+
+
+/* ─── CARD ─── */
+.le-card {
+  margin: 8px 12px 0;
+  background: var(--surface);
+  border-radius: 14px; padding: 12px 14px;
+  box-shadow: 0 1px 0 var(--border);
+}
+.le-card-lbl {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text3); margin-bottom: 8px;
+}
+
+/* quests */
+.le-q { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+.le-q + .le-q { border-top: 1px solid var(--border2); }
+.le-q-check {
+  width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
+  background: #F0E8D8;
+  display: flex; align-items: center; justify-content: center;
+}
+.le-q-check.done { background: #D8F0E0; }
+.le-q-name { font-size: 12px; font-weight: 600; color: var(--text1); flex: 1; }
+.le-q-name.done { color: var(--text3); text-decoration: line-through; }
+.le-q-xp { font-size: 11px; font-weight: 700; color: var(--ac); }
+.le-q-xp.done { color: var(--text3); }
+
+/* transactions */
+.le-tx { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.le-tx + .le-tx { border-top: 1px solid var(--border2); }
+.le-tx-ico {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: #F0E8D8; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.le-tx-name { font-size: 12px; font-weight: 600; color: var(--text1); }
+.le-tx-time { font-size: 10px; color: var(--text3); }
+.le-tx-amt { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--red); }
+
+
+/* ─── NAV ─── */
+.le-nav {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 10px; margin-top: 8px;
+  align-items: flex-start;
+}
+.le-nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; color: #C8B8A0;
+  font-family: 'Figtree', sans-serif;
+}
+.le-nav-item.on { color: var(--ac); }
+.le-nav-add {
+  width: 34px; height: 34px; background: var(--ac);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin: -2px auto 0;
+  box-shadow: 0 3px 10px rgba(229,96,26,.35);
+  transition: transform 150ms var(--ease-out);
+}
+.le-nav-add:active { transform: scale(0.92); }
+
+
+/* ═══════════════════════════════
+   SHEET OVERLAY
+═══════════════════════════════ */
+.sheet-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(24,18,10,.4);
+  opacity: 0; pointer-events: none;
+  transition: opacity 300ms;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+
+/* ═══════════════════════════════
+   BOTTOM SHEET BASE
+═══════════════════════════════ */
+.le-sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  z-index: 11;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+  transition: transform 380ms var(--ease-drawer);
+  max-height: 88%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-bottom: 20px;
+}
+.le-sheet::-webkit-scrollbar { display: none; }
+.le-sheet.open { transform: translateY(0); }
+
+.sheet-drag {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+.sheet-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px 8px;
+}
+.sheet-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--text1); letter-spacing: -.04em;
+}
+.sheet-close {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--border); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sheet-close:hover { background: #DDD0C0; }
+.sheet-close:active { transform: scale(0.88); }
+
+
+/* ─── GOALS SHEET ─── */
+.goal-item { padding: 12px 16px; }
+.goal-item + .goal-item { border-top: 1px solid var(--border); }
+.goal-row {
+  display: flex; justify-content: space-between;
+  align-items: baseline; margin-bottom: 6px;
+}
+.goal-name { font-size: 13px; font-weight: 600; color: var(--text1); }
+.goal-pct {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px; font-weight: 700; color: var(--ac);
+}
+.goal-pct.done { color: var(--green); }
+.goal-bar { height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; margin-bottom: 5px; }
+.goal-fill {
+  height: 100%; background: var(--ac); border-radius: 100px;
+}
+.goal-fill.done { background: var(--green); }
+.goal-meta {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text3); font-weight: 500;
+}
+
+.sheet-add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: 12px 16px 0;
+  width: calc(100% - 32px);
+  height: 42px;
+  background: #F0E8D8; border: 1.5px dashed #C8B0A0; border-radius: 12px;
+  font-family: 'Figtree', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  cursor: pointer;
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sheet-add-btn:hover { background: var(--border); }
+.sheet-add-btn:active { transform: scale(0.97); }
+
+
+/* ─── BUDGET SHEET ─── */
+.budget-main { padding: 4px 16px 14px; }
+.budget-big-row {
+  display: flex; justify-content: space-between;
+  align-items: baseline; margin-bottom: 8px;
+}
+.budget-spent {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px; font-weight: 800; color: var(--text1); letter-spacing: -.05em;
+}
+.budget-of { font-size: 12px; color: var(--text3); font-weight: 600; }
+.budget-bar { height: 12px; background: var(--border); border-radius: 100px; overflow: hidden; margin-bottom: 6px; }
+.budget-bar-fill { height: 100%; background: var(--ac); border-radius: 100px; }
+.budget-footer {
+  display: flex; justify-content: space-between;
+  font-size: 11px; font-weight: 600; color: var(--text3);
+}
+.budget-ok { color: var(--green); }
+
+.budget-divider {
+  height: 1px; background: var(--border); margin: 12px 16px;
+}
+.budget-cats-lbl {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text3);
+  padding: 0 16px; margin-bottom: 8px;
+}
+.bcat { display: flex; align-items: center; gap: 8px; padding: 6px 16px; }
+.bcat + .bcat { border-top: 1px solid var(--border2); }
+.bcat-name { font-size: 12px; font-weight: 600; color: var(--text1); width: 82px; flex-shrink: 0; }
+.bcat-bar { flex: 1; height: 6px; background: var(--border); border-radius: 100px; overflow: hidden; }
+.bcat-fill { height: 100%; background: var(--ac); border-radius: 100px; opacity: .7; }
+.bcat-amt { font-size: 11px; font-weight: 700; color: var(--text2); width: 60px; text-align: right; flex-shrink: 0; }
+
+
+/* ─── DAYS SHEET ─── */
+.days-main { padding: 10px 16px 0; }
+.days-big {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 48px; font-weight: 900; color: var(--green);
+  letter-spacing: -.06em; line-height: 1; margin-bottom: 4px;
+}
+.days-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; }
+.days-stat {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 9px 0; border-top: 1px solid var(--border);
+}
+.days-stat-lbl { font-size: 12px; color: var(--text3); font-weight: 600; }
+.days-stat-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px; font-weight: 700; color: var(--text1); letter-spacing: -.02em;
+}
+
+</style>
+</head>
+<body>
+
+<div class="page-title">Notch — гибрид A+B</div>
+<p class="page-sub">Unbounded + Figtree · Cream + Burnt orange · Без персонажа</p>
+<p class="page-hint">Нажми на тайлы 68% / 14 дн / 2/3 — откроется шторка</p>
+
+<!-- ══════════════════════════════════
+     PHONE
+══════════════════════════════════ -->
+<div class="phone">
+  <div class="phone-scroll">
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <!-- signal bars -->
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
+          <rect x="0" y="5" width="3" height="6" rx="1" fill="#18120A"/>
+          <rect x="4.5" y="3.5" width="3" height="7.5" rx="1" fill="#18120A"/>
+          <rect x="9" y="2" width="3" height="9" rx="1" fill="#18120A"/>
+          <rect x="13.5" y="0" width="2.5" height="11" rx="1" fill="#18120A" opacity=".3"/>
+        </svg>
+        <!-- battery -->
+        <svg width="22" height="11" viewBox="0 0 22 11" fill="none">
+          <rect x="0.5" y="0.5" width="18" height="10" rx="2" stroke="#18120A" stroke-width="1"/>
+          <rect x="19" y="3" width="3" height="5" rx="1" fill="#18120A" opacity=".5"/>
+          <rect x="1.5" y="1.5" width="13" height="8" rx="1.5" fill="#18120A"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="le-header">
+      <div>
+        <div class="le-greeting">Добрый вечер</div>
+        <div class="le-name">Руслан</div>
+      </div>
+      <div class="le-streak-pill">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF9500">
+          <path d="M12 3c0 0-6 5.5-6 10.5a6 6 0 0012 0c0-3-2-5-2-5s0 3-2.5 4c.5-4-1.5-6.5-1.5-9.5z"/>
+        </svg>
+        <span class="le-streak-n">23</span>
+        <span class="le-streak-l">дня</span>
+      </div>
+    </div>
+
+    <!-- XP STRIP -->
+    <div class="le-xp">
+      <div class="le-xp-row">
+        <span class="le-xp-level">Ур. 12</span>
+        <span class="le-xp-pts">3 840 / 4 000 XP</span>
+      </div>
+      <div class="le-xp-bar"><div class="le-xp-fill"></div></div>
+      <div class="le-xp-name">Воин</div>
+    </div>
+
+    <!-- STAT TILES -->
+    <div class="le-tiles">
+      <button class="le-tile" onclick="openSheet('budget')">
+        <div class="le-tile-val" style="color:var(--ac)">68%</div>
+        <div class="le-tile-lbl">бюджет</div>
+      </button>
+      <button class="le-tile" onclick="openSheet('days')">
+        <div class="le-tile-val" style="color:var(--green)">14 дн</div>
+        <div class="le-tile-lbl">запас</div>
+      </button>
+      <button class="le-tile" onclick="openSheet('goals')">
+        <div class="le-tile-val" style="color:var(--text1)">2/3</div>
+        <div class="le-tile-lbl">цели</div>
+      </button>
+    </div>
+
+    <!-- QUESTS CARD -->
+    <div class="le-card">
+      <div class="le-card-lbl">Квесты</div>
+      <div class="le-q">
+        <div class="le-q-check done">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="#2A8040" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="le-q-name done">Запиши 3 траты подряд</div>
+        <div class="le-q-xp done">+50 XP</div>
+      </div>
+      <div class="le-q">
+        <div class="le-q-check"></div>
+        <div class="le-q-name">Удержи бюджет до конца</div>
+        <div class="le-q-xp">+100 XP</div>
+      </div>
+      <div class="le-q">
+        <div class="le-q-check"></div>
+        <div class="le-q-name">Пополни одну из целей</div>
+        <div class="le-q-xp">+75 XP</div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS CARD -->
+    <div class="le-card">
+      <div class="le-card-lbl">Сегодня</div>
+      <div class="le-tx">
+        <div class="le-tx-ico">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B09A7A" stroke-width="2">
+            <path d="M17 8C8 10 5.9 16.17 3.82 19.82A1 1 0 004.7 21a3 3 0 003.32-1.17L9 17.88c.36.5.97.75 1.58.58l4.43-1.27a2 2 0 001.42-1.93V12l3.61 1.44A1 1 0 0021 12.5V8a1 1 0 00-1-1h-3z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="le-tx-name">Кафе «Чижи»</div>
+          <div class="le-tx-time">14:32</div>
+        </div>
+        <div class="le-tx-amt">−1 200 ₽</div>
+      </div>
+      <div class="le-tx">
+        <div class="le-tx-ico">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B09A7A" stroke-width="2">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>
+          </svg>
+        </div>
+        <div>
+          <div class="le-tx-name">Метро</div>
+          <div class="le-tx-time">09:15</div>
+        </div>
+        <div class="le-tx-amt">−54 ₽</div>
+      </div>
+      <div class="le-tx">
+        <div class="le-tx-ico">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B09A7A" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+        </div>
+        <div>
+          <div class="le-tx-name">Пятёрочка</div>
+          <div class="le-tx-time">08:03</div>
+        </div>
+        <div class="le-tx-amt">−1 096 ₽</div>
+      </div>
+    </div>
+
+    <!-- NAV -->
+    <div class="le-nav">
+      <div class="le-nav-item on">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="rgba(229,96,26,.12)" stroke="#E5601A" stroke-width="2"/>
+        </svg>
+        Главная
+      </div>
+      <div class="le-nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <polygon points="13,2 3,14 11,14 11,22 21,10 13,10" stroke="#C8B8A0" stroke-width="2"/>
+        </svg>
+        Квесты
+      </div>
+      <div class="le-nav-item">
+        <div class="le-nav-add">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="le-nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#C8B8A0" stroke-width="2"/>
+          <path d="M12 7v5l3 3" stroke="#C8B8A0" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        История
+      </div>
+      <div class="le-nav-item">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="7" r="4" stroke="#C8B8A0" stroke-width="2"/>
+          <path d="M4 21v-1a8 8 0 0116 0v1" stroke="#C8B8A0" stroke-width="2"/>
+        </svg>
+        Профиль
+      </div>
+    </div>
+
+  </div><!-- /phone-scroll -->
+
+
+  <!-- OVERLAY -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeAllSheets()"></div>
+
+
+  <!-- ── GOALS SHEET ── -->
+  <div class="le-sheet" id="goals-sheet">
+    <div class="sheet-drag"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Цели накоплений</div>
+      <button class="sheet-close" onclick="event.stopPropagation(); closeAllSheets()">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path d="M1 1l10 10M11 1L1 11" stroke="#7A6858" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="goal-item">
+      <div class="goal-row">
+        <div class="goal-name">Отпуск в Турции</div>
+        <div class="goal-pct">73%</div>
+      </div>
+      <div class="goal-bar"><div class="goal-fill" style="width:73%"></div></div>
+      <div class="goal-meta"><span>73 000 ₽</span><span>из 100 000 ₽</span></div>
+    </div>
+
+    <div class="goal-item">
+      <div class="goal-row">
+        <div class="goal-name">MacBook Pro</div>
+        <div class="goal-pct">30%</div>
+      </div>
+      <div class="goal-bar"><div class="goal-fill" style="width:30%"></div></div>
+      <div class="goal-meta"><span>45 000 ₽</span><span>из 150 000 ₽</span></div>
+    </div>
+
+    <div class="goal-item">
+      <div class="goal-row">
+        <div class="goal-name">Подушка безопасности</div>
+        <div class="goal-pct done">100%</div>
+      </div>
+      <div class="goal-bar"><div class="goal-fill done" style="width:100%"></div></div>
+      <div class="goal-meta"><span>120 000 ₽</span><span>из 120 000 ₽</span></div>
+    </div>
+
+    <button class="sheet-add-btn" onclick="event.stopPropagation()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path d="M12 5v14M5 12h14" stroke="#7A6858" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Добавить цель
+    </button>
+  </div>
+
+
+  <!-- ── BUDGET SHEET ── -->
+  <div class="le-sheet" id="budget-sheet">
+    <div class="sheet-drag"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Бюджет апреля</div>
+      <button class="sheet-close" onclick="event.stopPropagation(); closeAllSheets()">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path d="M1 1l10 10M11 1L1 11" stroke="#7A6858" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="budget-main">
+      <div class="budget-big-row">
+        <div class="budget-spent">62 400 ₽</div>
+        <div class="budget-of">из 80 000 ₽</div>
+      </div>
+      <div class="budget-bar"><div class="budget-bar-fill" style="width:68%"></div></div>
+      <div class="budget-footer">
+        <span>Использовано <strong>68%</strong></span>
+        <span class="budget-ok">Осталось 17 600 ₽</span>
+      </div>
+    </div>
+
+    <div class="budget-divider"></div>
+    <div class="budget-cats-lbl">По категориям</div>
+
+    <div class="bcat">
+      <div class="bcat-name">Еда</div>
+      <div class="bcat-bar"><div class="bcat-fill" style="width:64%"></div></div>
+      <div class="bcat-amt">25 200 ₽</div>
+    </div>
+    <div class="bcat">
+      <div class="bcat-name">Развлечения</div>
+      <div class="bcat-bar"><div class="bcat-fill" style="width:47%"></div></div>
+      <div class="bcat-amt">18 600 ₽</div>
+    </div>
+    <div class="bcat">
+      <div class="bcat-name">Транспорт</div>
+      <div class="bcat-bar"><div class="bcat-fill" style="width:20%"></div></div>
+      <div class="bcat-amt">7 800 ₽</div>
+    </div>
+    <div class="bcat">
+      <div class="bcat-name">Другое</div>
+      <div class="bcat-bar"><div class="bcat-fill" style="width:27%"></div></div>
+      <div class="bcat-amt">10 800 ₽</div>
+    </div>
+  </div>
+
+
+  <!-- ── DAYS SHEET ── -->
+  <div class="le-sheet" id="days-sheet">
+    <div class="sheet-drag"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Запас дней</div>
+      <button class="sheet-close" onclick="event.stopPropagation(); closeAllSheets()">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+          <path d="M1 1l10 10M11 1L1 11" stroke="#7A6858" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="days-main">
+      <div class="days-big">14</div>
+      <div class="days-label">дней запаса при текущем темпе трат</div>
+      <div class="days-stat">
+        <span class="days-stat-lbl">Остаток бюджета</span>
+        <span class="days-stat-val">17 600 ₽</span>
+      </div>
+      <div class="days-stat">
+        <span class="days-stat-lbl">Средний расход в день</span>
+        <span class="days-stat-val">1 270 ₽</span>
+      </div>
+      <div class="days-stat">
+        <span class="days-stat-lbl">До конца месяца</span>
+        <span class="days-stat-val">4 дня</span>
+      </div>
+      <div class="days-stat">
+        <span class="days-stat-lbl">Прогноз перерасхода</span>
+        <span class="days-stat-val" style="color:var(--green)">Нет</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+
+<script>
+function openSheet(name) {
+  document.querySelectorAll('.le-sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById(name + '-sheet').classList.add('open');
+}
+function closeAllSheets() {
+  document.querySelectorAll('.le-sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('sheet-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllSheets(); });
+</script>
+
+</body>
+</html>

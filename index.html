@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notch — финансы с прогрессом</title>
+  <meta name="description" content="Учёт расходов с квестами, стриками и уровнями. Как Duolingo, только для кошелька.">
+
+  <!-- Favicon — inline SVG, без внешних файлов -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234ECCA3'/><text x='16' y='23' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' fill='%230B0F14'>N</text></svg>">
+
+  <!-- Open Graph — Telegram, VK, WhatsApp, iMessage -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://melodious-moonbeam-48037f.netlify.app/">
+  <meta property="og:site_name"   content="Notch">
+  <meta property="og:title"       content="Notch — финансы с прогрессом">
+  <meta property="og:description" content="Учёт расходов с квестами, стриками и уровнями. Как Duolingo, только для кошелька.">
+  <meta property="og:image"       content="https://melodious-moonbeam-48037f.netlify.app/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image"      content="https://melodious-moonbeam-48037f.netlify.app/og.png">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="Notch — финансы с прогрессом">
+  <meta name="twitter:description" content="Учёт расходов с квестами, стриками и уровнями. Как Duolingo, только для кошелька.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── DARK THEME (default) ── */
+    :root {
+      color-scheme: dark;
+      --bg:       #0B0F14;
+      --s1:       #131920;
+      --s2:       #1C2432;
+      --s3:       #263040;
+      --accent:   #4ECCA3;
+      --a10:      rgba(78,204,163,.10);
+      --a20:      rgba(78,204,163,.20);
+      --a40:      rgba(78,204,163,.40);
+      --text:     #E6EDF8;
+      --t2:       #667796;
+      --t3:       #2A3550;
+      --green:    #4ECCA3;
+      --red:      #F07272;
+      --border:   rgba(255,255,255,.07);
+      --b2:       rgba(255,255,255,.04);
+      --shadow:   0 32px 80px rgba(0,0,0,.5);
+      --shadow-sm:0 4px 16px rgba(0,0,0,.3);
+      --phone-glow: rgba(78,204,163,.15);
+      --logo-text: #000;
+    }
+
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg:       #F5F4F0;
+      --s1:       #FFFFFF;
+      --s2:       #ECEAE4;
+      --s3:       #E0DDD6;
+      --accent:   #2D6A4F;
+      --a10:      rgba(45,106,79,.08);
+      --a20:      rgba(45,106,79,.18);
+      --a40:      rgba(45,106,79,.35);
+      --text:     #1A1C1A;
+      --t2:       #7A7972;
+      --t3:       #C0BDB6;
+      --green:    #2D6A4F;
+      --red:      #C03A2B;
+      --border:   rgba(0,0,0,.09);
+      --b2:       rgba(0,0,0,.05);
+      --shadow:   0 24px 64px rgba(0,0,0,.12);
+      --shadow-sm:0 2px 8px rgba(0,0,0,.08);
+      --phone-glow: rgba(45,106,79,.08);
+      --logo-text: #fff;
+    }
+
+    /* ── THEME TRANSITIONS ── */
+    html { transition: background-color .3s ease; }
+    body, nav, .card, .p-item, .ql-quest, .league-item,
+    .xp-table, .level-row, .pricing-col, .fa-level-card,
+    .streak-freeze-note, .input, footer {
+      transition:
+        background-color .3s ease,
+        border-color .3s ease,
+        color .3s ease,
+        box-shadow .3s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Archivo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── UTIL ── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .accent    { color: var(--accent); }
+    .muted     { color: var(--t2); }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity .6s cubic-bezier(0.23,1,0.32,1),
+                  transform .6s cubic-bezier(0.23,1,0.32,1);
+    }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: .1s; }
+    .d2 { transition-delay: .2s; }
+    .d3 { transition-delay: .3s; }
+    .d4 { transition-delay: .4s; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 200;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-inner {
+      display: flex; align-items: center;
+      justify-content: space-between; height: 62px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--text);
+      font-weight: 800; font-size: 18px; letter-spacing: -.02em;
+    }
+    .logo-mark {
+      width: 32px; height: 32px; background: var(--accent);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 15px; font-weight: 800;
+      color: var(--logo-text); flex-shrink: 0;
+      transition: background-color .3s ease, color .3s ease;
+    }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+
+    .nav-link {
+      color: var(--t2); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      padding: 6px 12px; border-radius: 8px;
+      transition: color .2s, background-color .2s;
+    }
+    .nav-link:hover { color: var(--text); background: var(--b2); }
+
+    /* ── THEME TOGGLE ── */
+    .theme-btn {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: var(--s2); border: 1px solid var(--border);
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; color: var(--t2);
+      transition: background-color .2s, border-color .2s,
+                  color .2s, transform .15s cubic-bezier(0.23,1,0.32,1);
+    }
+    .theme-btn:hover { color: var(--text); background: var(--s3); }
+    .theme-btn:active { transform: scale(0.92); }
+    .theme-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    [data-theme="dark"]  .icon-moon { display: none; }
+    [data-theme="light"] .icon-sun  { display: none; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; font-family: 'Archivo', sans-serif; font-weight: 600;
+      font-size: 14px; border: none; cursor: pointer; text-decoration: none;
+      transition: opacity .2s, transform .15s cubic-bezier(0.23,1,0.32,1);
+    }
+    .btn:active { transform: scale(0.96); }
+
+    .btn-primary {
+      background: var(--accent); color: var(--logo-text);
+      padding: 11px 22px; border-radius: 10px;
+    }
+    .btn-primary:hover { opacity: .88; }
+
+    .btn-ghost {
+      background: transparent; color: var(--text);
+      padding: 11px 20px; border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: color-mix(in srgb, var(--text) 30%, transparent); }
+
+    .btn-lg { font-size: 16px; padding: 14px 28px; border-radius: 12px; }
+
+    /* ── INPUT ── */
+    .input {
+      background: var(--s2); border: 1px solid var(--border);
+      color: var(--text); font-family: 'Archivo', sans-serif;
+      font-size: 15px; padding: 13px 18px; border-radius: 10px;
+      outline: none; transition: border-color .2s; width: 100%;
+    }
+    .input::placeholder { color: var(--t3); }
+    .input:focus { border-color: var(--a40); }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 92px 0 80px; position: relative; overflow: hidden;
+    }
+    .hero-glow {
+      position: absolute; width: 640px; height: 640px;
+      background: radial-gradient(circle, var(--a10) 0%, transparent 62%);
+      top: -100px; right: -140px; pointer-events: none;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1fr 296px;
+      gap: 72px; align-items: center;
+    }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--a10); border: 1px solid var(--a20);
+      color: var(--accent); font-size: 12px; font-weight: 600;
+      letter-spacing: .05em; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 100px; margin-bottom: 30px;
+    }
+    .dot {
+      width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
+      animation: blink 2.4s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.25} }
+
+    .hero h1 {
+      font-weight: 800; font-size: clamp(48px, 6vw, 84px);
+      line-height: 1.0; letter-spacing: -.03em; margin-bottom: 22px;
+    }
+    .hero-sub {
+      font-size: 18px; color: var(--t2); line-height: 1.75;
+      max-width: 480px; margin-bottom: 38px;
+    }
+    .form-row {
+      display: flex; gap: 10px; margin-bottom: 14px; max-width: 472px;
+    }
+    .form-meta { font-size: 13px; color: var(--t2); }
+    .form-meta strong { color: var(--text); font-weight: 600; }
+
+    .form-success {
+      display: none; align-items: center; gap: 10px;
+      color: var(--green); font-weight: 600; font-size: 16px;
+    }
+    .form-success.show { display: flex; }
+
+    /* ── PHONE ── */
+    .phone-wrap {
+      position: relative; display: flex; justify-content: center;
+    }
+    .phone-glow {
+      position: absolute; width: 340px; height: 340px;
+      background: radial-gradient(circle, var(--phone-glow) 0%, transparent 65%);
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+      pointer-events: none;
+      transition: background .3s ease;
+    }
+    /* phone screen is always dark — it represents the app */
+    .phone {
+      width: 264px; background: #12161D; border-radius: 46px; padding: 13px;
+      border: 1.5px solid rgba(255,255,255,.1);
+      box-shadow: 0 48px 100px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.6),
+                  inset 0 1px 0 rgba(255,255,255,.06);
+      position: relative; z-index: 1;
+    }
+    [data-theme="light"] .phone {
+      box-shadow: 0 32px 80px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.06);
+    }
+    .phone::before {
+      content: ''; position: absolute; top: 17px; left: 50%;
+      transform: translateX(-50%); width: 90px; height: 26px;
+      background: #0B0F14; border-radius: 16px; z-index: 10;
+    }
+    .phone-screen {
+      background: #0B0F14; border-radius: 34px; overflow: hidden;
+      padding: 48px 13px 16px;
+      display: flex; flex-direction: column; gap: 9px; min-height: 510px;
+    }
+
+    /* phone ui – always dark palette */
+    .pp-row  { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pp-name { font-size: 15px; font-weight: 600; color: #E6EDF8; }
+    .pp-rank { font-size: 9px; color: #667796; margin-top: 2px; }
+    .pp-streak {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 25px; font-weight: 800; color: #4ECCA3;
+      line-height: 1; letter-spacing: -.01em; text-align: right;
+    }
+    .pp-streak-sub { font-size: 9px; color: #667796; text-align: right; }
+    .pp-card {
+      background: #131920; border: 1px solid rgba(255,255,255,.05);
+      border-radius: 12px; padding: 11px 12px;
+    }
+    .pp-lbl {
+      font-size: 9px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .07em; color: #667796; margin-bottom: 3px;
+    }
+    .pp-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px; font-weight: 700; line-height: 1;
+      letter-spacing: -.01em; margin-bottom: 2px; color: #E6EDF8;
+    }
+    .pp-plus { font-size: 10px; color: #4ECCA3; margin-bottom: 7px; }
+    .pp-bar  { height: 4px; background: #263040; border-radius: 3px; overflow: hidden; }
+    .pp-fill { height: 100%; border-radius: 3px; background: #4ECCA3; transition: width 1.4s cubic-bezier(0.23,1,0.32,1); }
+    .pp-fill.amber { background: #FF9500; }
+    .pp-range {
+      display: flex; justify-content: space-between;
+      font-size: 8px; color: #2A3550; margin-top: 4px;
+    }
+    .pp-xr   { display: flex; justify-content: space-between; font-size: 9px; color: #667796; margin-bottom: 4px; }
+    .pp-qt   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .pp-qn   { font-size: 11px; font-weight: 600; color: #E6EDF8; }
+    .pp-qxp  { font-size: 10px; color: #4ECCA3; font-weight: 700; }
+    .pp-qd   { font-size: 10px; color: #667796; margin-bottom: 6px; }
+    .pp-done {
+      display: inline-block; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      background: rgba(78,204,163,.12); color: #4ECCA3;
+      padding: 2px 8px; border-radius: 100px;
+    }
+    .pp-txh  { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #667796; margin-bottom: 4px; }
+    .pp-tx   { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+    .pp-tx + .pp-tx { border-top: 1px solid rgba(255,255,255,.04); }
+    .pp-ico  { width: 27px; height: 27px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+    .pp-ico.food  { background: rgba(78,204,163,.1); }
+    .pp-ico.metro { background: rgba(96,165,250,.1); }
+    .pp-ico.coffee{ background: rgba(139,92,246,.1); }
+    .pp-tn   { font-size: 11px; font-weight: 500; color: #E6EDF8; }
+    .pp-tc   { font-size: 9px; color: #667796; }
+    .pp-ta   { margin-left: auto; font-size: 11px; font-weight: 600; color: #F07272; }
+
+    /* ── SECTION BASE ── */
+    .section { padding: 100px 0; border-top: 1px solid var(--border); }
+    .section-sm { padding: 80px 0; border-top: 1px solid var(--border); }
+
+    .eyebrow {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .13em; color: var(--accent); margin-bottom: 16px;
+    }
+    .eyebrow-muted {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .13em; color: var(--t2); margin-bottom: 16px;
+    }
+    .sec-title {
+      font-weight: 800; font-size: clamp(32px, 4.5vw, 58px);
+      letter-spacing: -.03em; line-height: 1.05; margin-bottom: 16px;
+    }
+    .sec-sub {
+      font-size: 18px; color: var(--t2); line-height: 1.75; max-width: 520px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    /* ── PROBLEM ── */
+    .problem-head { margin-bottom: 56px; }
+    .problem-statement {
+      font-weight: 800; font-size: clamp(30px, 4vw, 52px);
+      letter-spacing: -.03em; line-height: 1.1; max-width: 680px; margin-bottom: 12px;
+    }
+    .problem-strip { display: grid; grid-template-columns: 2fr 1.5fr 1fr; gap: 2px; }
+    .p-item {
+      background: var(--s1); padding: 30px 26px 28px; position: relative; overflow: hidden;
+    }
+    .p-item:first-child { border-radius: 14px 0 0 14px; }
+    .p-item:last-child  { border-radius: 0 14px 14px 0; }
+    .p-ghost {
+      position: absolute; top: 10px; right: 18px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 80px; font-weight: 800; color: var(--b2);
+      line-height: 1; user-select: none; pointer-events: none;
+    }
+    .p-heading { font-size: 17px; font-weight: 700; margin-bottom: 8px; position: relative; }
+    .p-body { font-size: 14px; color: var(--t2); line-height: 1.6; position: relative; }
+
+    /* ── STREAK ── */
+    .streak-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .streak-visual { display: flex; flex-direction: column; gap: 24px; }
+    .streak-counter { display: flex; align-items: flex-start; gap: 4px; }
+    .streak-fire { font-size: 64px; line-height: 1; filter: drop-shadow(0 0 20px rgba(255,100,0,.4)); margin-top: 8px; }
+    .streak-big {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(88px, 12vw, 144px);
+      font-weight: 800; color: var(--accent); line-height: 1;
+      letter-spacing: -.03em;
+    }
+    .streak-suffix {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px; font-weight: 700; color: var(--t2);
+      align-self: flex-end; margin-bottom: 14px; letter-spacing: -.01em;
+    }
+    .milestones { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ms {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 100px;
+      font-size: 13px; font-weight: 500;
+      border: 1px solid var(--border); color: var(--t2);
+    }
+    .ms.done { background: var(--a10); border-color: var(--a20); color: var(--accent); }
+    .ms-ck {
+      width: 14px; height: 14px; background: var(--accent);
+      border-radius: 50%; display: inline-flex; align-items: center;
+      justify-content: center; font-size: 8px; font-weight: 800;
+      color: var(--logo-text);
+    }
+    .streak-freeze-note {
+      font-size: 14px; color: var(--t2); background: var(--s2);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 16px; max-width: 340px;
+    }
+    .streak-freeze-note strong { color: var(--text); }
+
+    /* ── FINANCIAL AGE ── */
+    .fa-wrap { max-width: 840px; }
+    .fa-timeline { margin-top: 48px; }
+    .fa-track { height: 6px; background: var(--s3); border-radius: 4px; margin-bottom: 20px; position: relative; }
+    .fa-fill  { height: 100%; background: var(--accent); border-radius: 4px; position: relative; transition: width 1.4s cubic-bezier(0.23,1,0.32,1); }
+    .fa-cursor {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 20px; height: 20px; background: var(--accent); border-radius: 50%;
+      border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent);
+      transition: border-color .3s ease;
+    }
+    .fa-cursor-label {
+      position: absolute; right: -22px; top: -34px;
+      background: var(--accent); color: var(--logo-text);
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 100px; white-space: nowrap;
+      transition: background-color .3s, color .3s;
+    }
+    .fa-marks { display: flex; justify-content: space-between; }
+    .fa-mark  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .fa-mark-line { width: 1px; height: 10px; background: var(--t3); }
+    .fa-mark-day  { font-size: 12px; font-weight: 600; color: var(--t2); }
+    .fa-mark-name { font-size: 11px; color: var(--t3); }
+    .fa-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 44px; }
+    .fa-card {
+      background: var(--s1); border: 1px solid var(--b2);
+      border-radius: 14px; padding: 18px;
+    }
+    .fa-card.current { background: var(--a10); border-color: var(--a20); }
+    .fa-now-tag {
+      display: inline-block; background: var(--accent); color: var(--logo-text);
+      font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em;
+      padding: 2px 8px; border-radius: 100px; margin-bottom: 10px;
+      transition: background-color .3s, color .3s;
+    }
+    .fa-days {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1; margin-bottom: 6px;
+    }
+    .fa-card.current .fa-days { color: var(--accent); }
+    .fa-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .fa-desc { font-size: 12px; color: var(--t2); line-height: 1.5; }
+
+    /* ── QUESTS ── */
+    .quest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: start; }
+    .quest-log { background: var(--s1); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+    .ql-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; border-bottom: 1px solid var(--b2);
+    }
+    .ql-title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .ql-icon {
+      width: 20px; height: 20px; background: var(--a10);
+      border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; color: var(--accent); font-size: 11px;
+    }
+    .ql-slots { font-size: 12px; color: var(--t2); font-weight: 500; }
+    .ql-slots strong { color: var(--accent); }
+    .ql-q {
+      padding: 13px 18px; border-bottom: 1px solid var(--b2);
+      transition: background-color .15s;
+    }
+    .ql-q:last-child { border-bottom: none; }
+    .ql-q:hover { background: var(--s2); }
+    .ql-type { font-size: 10px; color: var(--t3); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; margin-bottom: 4px; }
+    .ql-legend { display: inline-block; font-size: 10px; color: #A78BFA; font-weight: 700; background: rgba(167,139,250,.08); padding: 2px 8px; border-radius: 100px; margin-bottom: 4px; }
+    .ql-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .ql-name { font-size: 13px; font-weight: 600; line-height: 1.35; max-width: 230px; }
+    .ql-xp   { font-size: 12px; font-weight: 700; color: var(--accent); margin-left: 10px; white-space: nowrap; }
+    .ql-prog { display: flex; align-items: center; gap: 8px; }
+    .ql-bar  { flex: 1; height: 4px; background: var(--s3); border-radius: 3px; overflow: hidden; }
+    .ql-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+    .ql-fill.g { background: var(--green); }
+    .ql-lbl  { font-size: 11px; color: var(--t2); white-space: nowrap; }
+    .ql-done { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; background: var(--a10); color: var(--green); padding: 2px 8px; border-radius: 100px; }
+
+    /* ── LEAGUES ── */
+    .league-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 72px; align-items: center; }
+    .league-track { display: flex; flex-direction: column; gap: 10px; }
+    .league-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid var(--b2); background: var(--s1);
+    }
+    .league-item.active { border-color: var(--a20); background: var(--a10); }
+    .l-badge {
+      width: 38px; height: 38px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .l-bronze  { background: rgba(180,120,60,.12);  color: #CD853F; }
+    .l-silver  { background: rgba(160,164,180,.12);  color: #AAB4BE; }
+    .l-gold    { background: rgba(255,200,40,.12);   color: #FFD700; }
+    .l-diamond { background: rgba(100,180,255,.12);  color: #60B8FF; }
+    .l-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+    .l-desc { font-size: 13px; color: var(--t2); }
+    .l-now {
+      background: var(--accent); color: var(--logo-text);
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .06em; padding: 3px 10px; border-radius: 100px;
+      margin-left: auto; flex-shrink: 0;
+      transition: background-color .3s, color .3s;
+    }
+    .l-lock { color: var(--t3); font-size: 16px; margin-left: auto; }
+
+    /* ── XP TABLE ── */
+    .xp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+    .xp-table { background: var(--s1); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .xp-thead {
+      display: grid; grid-template-columns: 1fr auto;
+      padding: 11px 18px; border-bottom: 1px solid var(--b2);
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--t2);
+    }
+    .xp-row {
+      display: grid; grid-template-columns: 1fr auto;
+      padding: 11px 18px; font-size: 14px;
+      border-bottom: 1px solid var(--b2); align-items: center;
+      transition: background-color .15s;
+    }
+    .xp-row:last-child { border-bottom: none; }
+    .xp-row:hover { background: var(--s2); }
+    .xp-row.hi { background: var(--a10); }
+    .xp-row.hi:hover { background: var(--a10); }
+    .xp-act { color: var(--t2); }
+    .xp-row.hi .xp-act { color: var(--text); font-weight: 600; }
+    .xp-pts {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 800; color: var(--accent);
+      text-align: right; letter-spacing: .01em;
+    }
+    .level-list { display: flex; flex-direction: column; gap: 8px; }
+    .level-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 16px; border-radius: 10px;
+      border: 1px solid var(--b2); background: var(--s1);
+    }
+    .level-row.cur { border-color: var(--a20); background: var(--a10); }
+    .lv-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 19px; font-weight: 800; color: var(--t3);
+      min-width: 44px; letter-spacing: -.01em;
+    }
+    .level-row.cur .lv-num { color: var(--accent); }
+    .lv-name { flex: 1; font-size: 14px; font-weight: 600; }
+    .lv-range { font-size: 12px; color: var(--t2); }
+
+    /* ── PRICING ── */
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; max-width: 860px; }
+    .pricing-col {
+      background: var(--s1); padding: 38px 34px;
+      border-radius: 16px 0 0 16px;
+    }
+    .pricing-col.premium {
+      background: var(--s2); border-radius: 0 16px 16px 0;
+      border: 1px solid var(--a20);
+    }
+    .pr-tag {
+      display: inline-block; background: var(--accent); color: var(--logo-text);
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; padding: 3px 10px; border-radius: 100px;
+      margin-bottom: 18px; transition: background-color .3s, color .3s;
+    }
+    .pr-plan {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 30px; font-weight: 800; letter-spacing: -.01em; line-height: 1; margin-bottom: 6px;
+    }
+    .pr-price { font-size: 15px; color: var(--t2); margin-bottom: 28px; }
+    .pr-price strong { color: var(--text); font-size: 22px; font-weight: 800; }
+    .pr-list { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+    .pr-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: var(--t2); line-height: 1.4; }
+    .pricing-col.premium .pr-list li { color: var(--text); }
+    .pr-ck {
+      width: 16px; height: 16px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px; font-size: 9px; font-weight: 800;
+    }
+    .pr-ck.ok  { background: var(--a10); color: var(--green); }
+    .pr-cta { margin-top: 32px; }
+
+    /* ── CTA ── */
+    .cta-section { padding: 120px 0; border-top: 1px solid var(--border); position: relative; overflow: hidden; }
+    .cta-glow {
+      position: absolute; width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--a10) 0%, transparent 65%);
+      left: 50%; top: 50%; transform: translate(-50%,-50%);
+      pointer-events: none;
+    }
+    .cta-inner { position: relative; z-index: 1; }
+    .cta-title {
+      font-weight: 800; font-size: clamp(44px, 6vw, 80px);
+      letter-spacing: -.03em; line-height: 1.02; margin-bottom: 18px; max-width: 660px;
+    }
+    .cta-sub { font-size: 18px; color: var(--t2); margin-bottom: 38px; max-width: 460px; }
+    .cta-form { display: flex; gap: 10px; max-width: 472px; margin-bottom: 14px; }
+
+    /* ── FOOTER ── */
+    footer { border-top: 1px solid var(--border); padding: 34px 0; }
+    .foot-inner { display: flex; align-items: center; justify-content: space-between; }
+    .foot-copy { font-size: 13px; color: var(--t2); }
+    .foot-links { display: flex; gap: 22px; }
+    .foot-links a { font-size: 13px; color: var(--t2); text-decoration: none; transition: color .2s; }
+    .foot-links a:hover { color: var(--text); }
+
+    /* ── HERO MOBILE STATS ── */
+    .hero-stats {
+      display: none;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 20px 18px;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 20px;
+      margin-top: 32px;
+    }
+    .hs-item { display: flex; flex-direction: column; gap: 3px; }
+    .hs-wide { grid-column: span 2; }
+    .hs-num {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 30px; font-weight: 800; line-height: 1;
+      letter-spacing: -.02em; color: var(--accent);
+    }
+    .hs-label { font-size: 12px; color: var(--t2); font-weight: 500; }
+    .hs-xp-head {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--t2); margin-bottom: 6px;
+    }
+    .hs-bar { height: 5px; background: var(--s3); border-radius: 3px; overflow: hidden; }
+    .hs-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+    .hs-divider { grid-column: span 2; height: 1px; background: var(--border); }
+
+    /* ── ACHIEVEMENTS ── */
+    .ach-tier { margin-bottom: 48px; }
+    .ach-tier:last-child { margin-bottom: 0; }
+    .ach-tier-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .12em; color: var(--t2); margin-bottom: 14px;
+    }
+    .ach-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .ach-dot.common  { background: var(--t3); }
+    .ach-dot.rare    { background: #60A5FA; }
+    .ach-dot.legend  { background: #C9A227; }
+
+    /* Common — inline pills */
+    .ach-common-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ach-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px;
+      transition: background-color .15s;
+    }
+    .ach-pill:hover { background: var(--s2); }
+    .ach-pill.done  { border-color: var(--a20); }
+    .ach-pill-check {
+      width: 18px; height: 18px; background: var(--a10);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; color: var(--green); font-size: 9px;
+      font-weight: 800; flex-shrink: 0;
+    }
+    .ach-pill-empty {
+      width: 18px; height: 18px; background: var(--s3);
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .ach-pill-name { font-size: 14px; font-weight: 600; }
+    .ach-pill-desc { font-size: 12px; color: var(--t2); }
+
+    /* Rare — asymmetric 2-col */
+    .ach-rare-grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 8px;
+    }
+    .ach-rare {
+      background: var(--s1);
+      border: 1px solid rgba(96,165,250,.22);
+      border-radius: 14px; padding: 20px 22px;
+      transition: background-color .15s;
+    }
+    .ach-rare:hover { background: var(--s2); }
+    .ach-rare-star {
+      font-size: 11px; color: #60A5FA; letter-spacing: .06em;
+      margin-bottom: 10px; display: block;
+    }
+    .ach-rare-name { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+    .ach-rare-desc { font-size: 13px; color: var(--t2); line-height: 1.5; }
+
+    /* Legendary — featured + asymmetric row */
+    .ach-leg-featured {
+      background: rgba(201,162,39,.07);
+      border: 1px solid rgba(201,162,39,.22);
+      border-radius: 14px; padding: 24px 26px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 20px;
+      margin-bottom: 8px;
+    }
+    .ach-leg-featured:hover { background: rgba(201,162,39,.10); }
+    .ach-leg-tag {
+      grid-column: 1 / -1;
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .12em; color: #C9A227; margin-bottom: 4px;
+    }
+    .ach-leg-fn { font-size: 20px; font-weight: 800; color: #C9A227; }
+    .ach-leg-xp {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 26px; font-weight: 800; color: #C9A227;
+      letter-spacing: -.01em; align-self: center; grid-row: span 2;
+    }
+    .ach-leg-fd { font-size: 14px; color: var(--t2); line-height: 1.5; margin-top: 4px; }
+    .ach-leg-prog { grid-column: 1 / -1; margin-top: 12px; }
+    .ach-leg-prog-head {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--t2); margin-bottom: 6px;
+    }
+    .ach-leg-bar { height: 5px; background: var(--s3); border-radius: 3px; overflow: hidden; }
+    .ach-leg-bar-fill { height: 100%; border-radius: 3px; background: #C9A227; }
+
+    .ach-leg-row {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr;
+      gap: 8px;
+    }
+    .ach-leg-card {
+      background: rgba(201,162,39,.05);
+      border: 1px solid rgba(201,162,39,.16);
+      border-radius: 14px; padding: 18px 20px;
+      transition: background-color .15s;
+    }
+    .ach-leg-card:hover { background: rgba(201,162,39,.09); }
+    .ach-leg-cn { font-size: 15px; font-weight: 700; color: #C9A227; margin-bottom: 5px; }
+    .ach-leg-cd { font-size: 13px; color: var(--t2); line-height: 1.5; margin-bottom: 8px; }
+    .ach-leg-cxp {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px; font-weight: 800; color: #C9A227; opacity: .6;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 920px) {
+      .hero-grid      { grid-template-columns: 1fr; }
+      .phone-wrap     { display: none; }
+      .hero-stats     { display: grid; }
+      .streak-grid    { grid-template-columns: 1fr; gap: 40px; }
+      .streak-grid .reveal:first-child { order: 1; }
+      .streak-grid .reveal:last-child  { order: 0; }
+      .quest-grid     { grid-template-columns: 1fr; gap: 40px; }
+      .league-grid    { grid-template-columns: 1fr; gap: 40px; }
+      .xp-grid        { grid-template-columns: 1fr; gap: 40px; }
+      .pricing-grid   { grid-template-columns: 1fr; }
+      .pricing-col    { border-radius: 16px 16px 0 0 !important; }
+      .pricing-col.premium { border-radius: 0 0 16px 16px !important; }
+      .problem-strip  { grid-template-columns: 1fr; gap: 2px; }
+      .p-item:first-child { border-radius: 14px 14px 0 0; }
+      .p-item:last-child  { border-radius: 0 0 14px 14px; }
+      .fa-cards       { grid-template-columns: repeat(2,1fr); }
+      .fa-cursor-label { font-size: 10px; right: -18px; top: -30px; }
+      .form-row, .cta-form { flex-direction: column; }
+      .nav-link       { display: none; }
+      .ach-rare-grid  { grid-template-columns: 1fr; }
+      .ach-leg-row    { grid-template-columns: 1fr 1fr; }
+      .ach-leg-row .ach-leg-card:last-child { grid-column: span 2; }
+    }
+    @media (max-width: 600px) {
+      .section, .cta-section { padding: 64px 0; }
+      .section-sm     { padding: 52px 0; }
+      .fa-cards       { grid-template-columns: 1fr 1fr; }
+      .fa-mark-name   { display: none; }
+      .foot-links     { display: none; }
+      .ach-leg-row    { grid-template-columns: 1fr; }
+      .ach-leg-row .ach-leg-card:last-child { grid-column: span 1; }
+      .ach-leg-featured { grid-template-columns: 1fr; }
+      .ach-leg-xp     { display: none; }
+      .streak-big     { font-size: clamp(80px, 20vw, 144px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="logo-mark">N</div>
+        Notch
+      </a>
+      <div class="nav-right">
+        <a href="#mechanics" class="nav-link">Механики</a>
+        <a href="#pricing" class="nav-link">Тарифы</a>
+        <button class="theme-btn" id="themeToggle" title="Сменить тему">
+          <!-- Sun: shown in dark mode -->
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+          <!-- Moon: shown in light mode -->
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+        <a href="#waitlist" class="btn btn-primary">Записаться</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="container">
+    <div class="hero-grid">
+
+      <div>
+        <div class="hero-tag reveal">
+          <span class="dot"></span>
+          Предзапись открыта
+        </div>
+        <h1 class="reveal d1">
+          Финансы,<br>
+          которые держат<br>
+          <span class="accent">стрик.</span>
+        </h1>
+        <p class="hero-sub reveal d2">
+          Квесты. Уровни. Лиги. Учёт расходов с механиками,
+          которые уже работают в Duolingo&nbsp;&mdash;
+          только для твоего бюджета.
+        </p>
+        <div class="reveal d3">
+          <div id="hero-wrap">
+            <div class="form-row">
+              <input class="input" type="email" id="hero-email" placeholder="твой@email.com" autocomplete="email">
+              <button class="btn btn-primary btn-lg" onclick="submitForm('hero')">Записаться</button>
+            </div>
+            <p class="form-meta">В списке: <strong>1&thinsp;247 человек</strong>. Никакого спама.</p>
+          </div>
+          <div class="form-success" id="hero-success">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M6 10l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Записан! Уведомим первым.
+          </div>
+        </div>
+
+        <!-- mobile-only stats strip instead of phone -->
+        <div class="hero-stats reveal d4">
+          <div class="hs-item">
+            <div class="hs-num">&#128293;&nbsp;23</div>
+            <div class="hs-label">стрик дней</div>
+          </div>
+          <div class="hs-item">
+            <div class="hs-num accent">14</div>
+            <div class="hs-label">дней фин. свободы</div>
+          </div>
+          <div class="hs-divider"></div>
+          <div class="hs-item hs-wide">
+            <div class="hs-xp-head">
+              <span>Экономист &middot; Уровень&nbsp;12</span>
+              <span>71%</span>
+            </div>
+            <div class="hs-bar"><div class="hs-bar-fill" style="width:71%"></div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="phone-wrap reveal d2">
+        <div class="phone-glow"></div>
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="pp-row">
+              <div>
+                <div class="pp-name">Привет, Саша</div>
+                <div class="pp-rank">Уровень&nbsp;12 &middot; Экономист</div>
+              </div>
+              <div>
+                <div class="pp-streak">&#128293;&nbsp;23</div>
+                <div class="pp-streak-sub">дней подряд</div>
+              </div>
+            </div>
+            <div class="pp-card">
+              <div class="pp-lbl">Финансовый возраст</div>
+              <div class="pp-val">14 дней</div>
+              <div class="pp-plus">+3 дня за месяц</div>
+              <div class="pp-bar"><div class="pp-fill" id="pf-fa" style="width:0%"></div></div>
+              <div class="pp-range"><span>0</span><span>30 дней</span></div>
+            </div>
+            <div>
+              <div class="pp-xr"><span style="color:#E6EDF8">Экономист</span><span>2&thinsp;840 / 4&thinsp;000 XP</span></div>
+              <div class="pp-bar"><div class="pp-fill" id="pf-xp" style="width:0%"></div></div>
+            </div>
+            <div class="pp-card">
+              <div class="pp-qt">
+                <div class="pp-qn">Дневной квест</div>
+                <div class="pp-qxp">+50 XP</div>
+              </div>
+              <div class="pp-qd">Не трать на доставку еды сегодня</div>
+              <span class="pp-done">&#10003;&nbsp;Выполнено</span>
+            </div>
+            <div>
+              <div class="pp-txh">Сегодня</div>
+              <div class="pp-tx">
+                <div class="pp-ico food">&#128722;</div>
+                <div><div class="pp-tn">Пятёрочка</div><div class="pp-tc">Продукты</div></div>
+                <div class="pp-ta">&minus;843&thinsp;&#8381;</div>
+              </div>
+              <div class="pp-tx">
+                <div class="pp-ico metro">&#128643;</div>
+                <div><div class="pp-tn">Метро</div><div class="pp-tc">Транспорт</div></div>
+                <div class="pp-ta">&minus;52&thinsp;&#8381;</div>
+              </div>
+              <div class="pp-tx">
+                <div class="pp-ico coffee">&#9749;</div>
+                <div><div class="pp-tn">Surf Coffee</div><div class="pp-tc">Кофе</div></div>
+                <div class="pp-ta">&minus;280&thinsp;&#8381;</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="section" id="mechanics">
+  <div class="container">
+    <div class="problem-head reveal">
+      <p class="problem-statement">
+        Ты уже скачивал финансовое<br>
+        приложение. Удалил через 2 недели.
+      </p>
+      <p class="muted" style="font-size:16px">Это не твоя вина. Они просто скучные.</p>
+    </div>
+    <div class="problem-strip">
+      <div class="p-item reveal">
+        <div class="p-ghost">01</div>
+        <div class="p-heading">Это просто список цифр</div>
+        <p class="p-body">Открываешь — видишь: потратил 47&thinsp;320&thinsp;&#8381;. И что? Без смысла цифры не меняют поведение.</p>
+      </div>
+      <div class="p-item reveal d1">
+        <div class="p-ghost">02</div>
+        <div class="p-heading">Незачем открывать завтра</div>
+        <p class="p-body">Нет прогресса, нет цели, нет причины возвращаться. Привычка не формируется.</p>
+      </div>
+      <div class="p-item reveal d2">
+        <div class="p-ghost">03</div>
+        <div class="p-heading">Чувство вины</div>
+        <p class="p-body">Потратил на Wildberries&nbsp;&mdash; и тебе показывают красный график. Мотивирует?</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHIFT -->
+<section class="section-sm">
+  <div class="container">
+    <div class="reveal">
+      <div class="eyebrow">Наш ответ</div>
+      <h2 class="sec-title" style="max-width:760px">
+        Мы добавили то, чего не хватало&nbsp;&mdash;<br>
+        <span class="accent">причину возвращаться.</span>
+      </h2>
+      <p class="sec-sub">
+        Те же механики, что удержали тебя в Duolingo&nbsp;&mdash;
+        только для кошелька. Не строго, не нудно.
+        Как умный друг рядом.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- STREAK -->
+<section class="section">
+  <div class="container">
+    <div class="streak-grid">
+      <div class="streak-visual reveal">
+        <div class="streak-counter">
+          <div class="streak-fire">&#128293;</div>
+          <div class="streak-big" id="streak-num">47</div>
+          <div class="streak-suffix">дней</div>
+        </div>
+        <div class="milestones">
+          <div class="ms done"><span class="ms-ck">&#10003;</span> 7 дней</div>
+          <div class="ms done"><span class="ms-ck">&#10003;</span> 30 дней</div>
+          <div class="ms">100 дней</div>
+          <div class="ms">365 дней</div>
+        </div>
+        <div class="streak-freeze-note">
+          <strong>Заморозка стрика</strong>&nbsp;&mdash; раз в месяц одна защита.<br>
+          В Premium&nbsp;&mdash; до трёх.
+        </div>
+      </div>
+      <div class="reveal d1">
+        <div class="eyebrow-muted">Стрик</div>
+        <h3 class="sec-title">Каждый день<br>в плюсе.</h3>
+        <p class="sec-sub">
+          Записал хотя бы одну трату&nbsp;&mdash; счётчик растёт.
+          Пропустил&nbsp;&mdash; сгорает. Вечером напоминание:
+          «Твой стрик 47 дней сгорит через 2 часа».
+        </p>
+        <br>
+        <p class="sec-sub">
+          Совместный стрик с другом работает сильнее анонимной лиги.
+          На отметке 365 дней&nbsp;&mdash; легендарное достижение «Годовщина».
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINANCIAL AGE -->
+<section class="section">
+  <div class="container">
+    <div class="fa-wrap">
+      <div class="reveal">
+        <div class="eyebrow-muted">Финансовый возраст</div>
+        <h3 class="sec-title">Один показатель.<br>Всё понятно.</h3>
+        <p class="sec-sub">«Сколько дней ты проживёшь на отложенные деньги?»&nbsp;&mdash; один ответ вместо ста графиков.</p>
+      </div>
+      <div class="fa-timeline reveal d1">
+        <div class="fa-track">
+          <div class="fa-fill" id="fa-fill" style="width:0%">
+            <div class="fa-cursor">
+              <div class="fa-cursor-label">14 дней</div>
+            </div>
+          </div>
+        </div>
+        <div class="fa-marks">
+          <div class="fa-mark"><div class="fa-mark-day">0</div></div>
+          <div class="fa-mark"><div class="fa-mark-line"></div><div class="fa-mark-day">30</div><div class="fa-mark-name">Подушка</div></div>
+          <div class="fa-mark"><div class="fa-mark-line"></div><div class="fa-mark-day">90</div><div class="fa-mark-name">Свободен</div></div>
+          <div class="fa-mark"><div class="fa-mark-line"></div><div class="fa-mark-day">180+</div><div class="fa-mark-name">Крепость</div></div>
+        </div>
+      </div>
+      <div class="fa-cards">
+        <div class="fa-card current reveal">
+          <div class="fa-now-tag">Сейчас</div>
+          <div class="fa-days">14</div>
+          <div class="fa-name">Начало</div>
+          <div class="fa-desc">Формируешь привычку</div>
+        </div>
+        <div class="fa-card reveal d1">
+          <div class="fa-days">30</div>
+          <div class="fa-name">Подушка</div>
+          <div class="fa-desc">Месяц без паники при форс-мажоре</div>
+        </div>
+        <div class="fa-card reveal d2">
+          <div class="fa-days">90</div>
+          <div class="fa-name">Свободен</div>
+          <div class="fa-desc">Квартал резерва&nbsp;&mdash; не зависишь от зарплаты</div>
+        </div>
+        <div class="fa-card reveal d3">
+          <div class="fa-days">180</div>
+          <div class="fa-name">Крепость</div>
+          <div class="fa-desc">Полгода. Можно уволиться и не бояться</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUESTS -->
+<section class="section">
+  <div class="container">
+    <div class="quest-grid">
+      <div class="reveal">
+        <div class="eyebrow-muted">Квесты</div>
+        <h3 class="sec-title">Каждый день&nbsp;&mdash;<br>новая задача.</h3>
+        <p class="sec-sub">Ежедневные, еженедельные и легендарные квесты. Не абстрактные цели&nbsp;&mdash; конкретные действия с наградой в XP.</p>
+        <br>
+        <p class="sec-sub">В Premium: персональные квесты под твои паттерны. Яндекс.Еда съедает бюджет&nbsp;&mdash; квест появится именно для тебя.</p>
+      </div>
+      <div class="quest-log reveal d1">
+        <div class="ql-head">
+          <div class="ql-title"><div class="ql-icon">&#9889;</div>Активные квесты</div>
+          <div class="ql-slots"><strong>3</strong>&nbsp;/ 5</div>
+        </div>
+        <div class="ql-q">
+          <div class="ql-type">Ежедневный</div>
+          <div class="ql-top">
+            <div class="ql-name">Запиши все траты сегодня</div>
+            <div class="ql-xp">+50 XP</div>
+          </div>
+          <div class="ql-prog">
+            <div class="ql-bar"><div class="ql-fill g" style="width:100%"></div></div>
+            <span class="ql-done">&#10003;&nbsp;Выполнено</span>
+          </div>
+        </div>
+        <div class="ql-q">
+          <div class="ql-type">Ежедневный</div>
+          <div class="ql-top">
+            <div class="ql-name">Не трать на кофе вне дома сегодня</div>
+            <div class="ql-xp">+50 XP</div>
+          </div>
+          <div class="ql-prog">
+            <div class="ql-bar"><div class="ql-fill" style="width:0%"></div></div>
+            <span class="ql-lbl">до конца дня</span>
+          </div>
+        </div>
+        <div class="ql-q">
+          <div class="ql-type">Еженедельный</div>
+          <div class="ql-top">
+            <div class="ql-name">Потрать на развлечения не больше&nbsp;3&thinsp;500&thinsp;&#8381;</div>
+            <div class="ql-xp">+200 XP</div>
+          </div>
+          <div class="ql-prog">
+            <div class="ql-bar"><div class="ql-fill" style="width:53%"></div></div>
+            <span class="ql-lbl">1&thinsp;847&nbsp;/&nbsp;3&thinsp;500&thinsp;&#8381;</span>
+          </div>
+        </div>
+        <div class="ql-q">
+          <div class="ql-legend">&#9733;&nbsp; Легендарный</div>
+          <div class="ql-top">
+            <div class="ql-name">Железная воля&nbsp;&mdash; 100-дневный стрик</div>
+            <div class="ql-xp">+500 XP</div>
+          </div>
+          <div class="ql-prog">
+            <div class="ql-bar"><div class="ql-fill" style="width:47%"></div></div>
+            <span class="ql-lbl">47&nbsp;/&nbsp;100 дней</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEAGUES -->
+<section class="section">
+  <div class="container">
+    <div class="league-grid">
+      <div class="league-track reveal">
+        <div class="league-item">
+          <div class="l-badge l-bronze">&#129353;</div>
+          <div><div class="l-name">Бронза</div><div class="l-desc">Вход свободный</div></div>
+        </div>
+        <div class="league-item">
+          <div class="l-badge l-silver">&#129352;</div>
+          <div><div class="l-name">Серебро</div><div class="l-desc">Топ 40% Бронзы</div></div>
+        </div>
+        <div class="league-item active">
+          <div class="l-badge l-gold">&#129351;</div>
+          <div><div class="l-name">Золото</div><div class="l-desc">Саша и ещё 23 участника</div></div>
+          <div class="l-now">Сейчас</div>
+        </div>
+        <div class="league-item">
+          <div class="l-badge l-diamond">&#128142;</div>
+          <div><div class="l-name">Бриллиант</div><div class="l-desc">Только Premium</div></div>
+          <div class="l-lock">&#128274;</div>
+        </div>
+      </div>
+      <div class="reveal d1">
+        <div class="eyebrow-muted">Лиги</div>
+        <h3 class="sec-title">Соревнование<br>без стресса.</h3>
+        <p class="sec-sub">Еженедельные лиги по XP&nbsp;&mdash; не по суммам денег. Никто не видит сколько ты тратишь или зарабатываешь. Только игровые показатели.</p>
+        <br>
+        <p class="sec-sub">Участие по желанию. Социальное давление без финансовой обнажённости.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACHIEVEMENTS -->
+<section class="section" id="achievements">
+  <div class="container">
+
+    <div class="reveal" style="margin-bottom:52px">
+      <div class="eyebrow-muted">Достижения</div>
+      <h3 class="sec-title">Три уровня редкости.</h3>
+      <p class="sec-sub">Открываются автоматически за реальные действия&nbsp;&mdash; не за покупки.</p>
+    </div>
+
+    <!-- COMMON -->
+    <div class="ach-tier reveal">
+      <div class="ach-tier-label">
+        <span class="ach-dot common"></span>
+        Обычные
+      </div>
+      <div class="ach-common-row">
+        <div class="ach-pill done">
+          <span class="ach-pill-check">&#10003;</span>
+          <div><div class="ach-pill-name">Первый шаг</div><div class="ach-pill-desc">первая запись</div></div>
+        </div>
+        <div class="ach-pill done">
+          <span class="ach-pill-check">&#10003;</span>
+          <div><div class="ach-pill-name">Неделька</div><div class="ach-pill-desc">7-дневный стрик</div></div>
+        </div>
+        <div class="ach-pill done">
+          <span class="ach-pill-check">&#10003;</span>
+          <div><div class="ach-pill-name">Плановик</div><div class="ach-pill-desc">первый бюджет</div></div>
+        </div>
+        <div class="ach-pill">
+          <span class="ach-pill-empty"></span>
+          <div><div class="ach-pill-name">Дебют</div><div class="ach-pill-desc">первые накопления</div></div>
+        </div>
+        <div class="ach-pill">
+          <span class="ach-pill-empty"></span>
+          <div><div class="ach-pill-name">Месяц</div><div class="ach-pill-desc">30 дней в приложении</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RARE -->
+    <div class="ach-tier reveal">
+      <div class="ach-tier-label">
+        <span class="ach-dot rare"></span>
+        Редкие
+      </div>
+      <div class="ach-rare-grid">
+        <div class="ach-rare">
+          <span class="ach-rare-star">&#9733;&#9733;&#9733;</span>
+          <div class="ach-rare-name">Месяц в плюсе</div>
+          <div class="ach-rare-desc">Закрыл месяц в рамках бюджета. Ни рубля перерасхода.</div>
+        </div>
+        <div class="ach-rare">
+          <span class="ach-rare-star">&#9733;&#9733;&#9733;</span>
+          <div class="ach-rare-name">Скряга</div>
+          <div class="ach-rare-desc">Потратил на развлечения вдвое меньше лимита.</div>
+        </div>
+        <div class="ach-rare">
+          <span class="ach-rare-star">&#9733;&#9733;&#9733;</span>
+          <div class="ach-rare-name">Копилка</div>
+          <div class="ach-rare-desc">Сформировал первые накопления и не потратил их в тот же день.</div>
+        </div>
+        <div class="ach-rare">
+          <span class="ach-rare-star">&#9733;&#9733;&#9733;</span>
+          <div class="ach-rare-name">Подушка</div>
+          <div class="ach-rare-desc">Финансовый возраст достиг 30 дней.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGENDARY -->
+    <div class="ach-tier reveal">
+      <div class="ach-tier-label">
+        <span class="ach-dot legend"></span>
+        Легендарные
+      </div>
+
+      <div class="ach-leg-featured">
+        <div class="ach-leg-tag">&#9733;&nbsp; Легендарное достижение</div>
+        <div class="ach-leg-fn">Железная воля</div>
+        <div class="ach-leg-xp">+500 XP</div>
+        <div class="ach-leg-fd">100-дневный стрик без единого пропуска. Видно всем участникам твоей лиги.</div>
+        <div class="ach-leg-prog">
+          <div class="ach-leg-prog-head">
+            <span>Прогресс</span><span>47 / 100 дней</span>
+          </div>
+          <div class="ach-leg-bar"><div class="ach-leg-bar-fill" id="leg-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="ach-leg-row">
+        <div class="ach-leg-card">
+          <div class="ach-leg-cn">Годовщина</div>
+          <div class="ach-leg-cd">365 дней в приложении. Год непрерывной работы с деньгами.</div>
+          <div class="ach-leg-cxp">+500 XP</div>
+        </div>
+        <div class="ach-leg-card">
+          <div class="ach-leg-cn">Финансовая крепость</div>
+          <div class="ach-leg-cd">Три месяца подряд закрыты в рамках бюджета.</div>
+          <div class="ach-leg-cxp">+300 XP</div>
+        </div>
+        <div class="ach-leg-card">
+          <div class="ach-leg-cn">Свободен</div>
+          <div class="ach-leg-cd">Финансовый возраст&nbsp;&mdash; 90 дней.</div>
+          <div class="ach-leg-cxp">+300 XP</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- XP & LEVELS -->
+<section class="section" id="xp">
+  <div class="container">
+    <div class="xp-grid">
+      <div class="reveal">
+        <div class="eyebrow-muted">Опыт и уровни</div>
+        <h3 class="sec-title">Каждое действие<br>приносит XP.</h3>
+        <p class="sec-sub" style="margin-bottom:28px">Не нужно быть дисциплинированным от природы. Прогресс виден каждый день.</p>
+        <div class="xp-table">
+          <div class="xp-thead"><span>Действие</span><span>XP</span></div>
+          <div class="xp-row"><span class="xp-act">Записал трату</span><span class="xp-pts">+10</span></div>
+          <div class="xp-row"><span class="xp-act">Поддержал стрик</span><span class="xp-pts">+15</span></div>
+          <div class="xp-row"><span class="xp-act">Выполнил дневной квест</span><span class="xp-pts">+50</span></div>
+          <div class="xp-row"><span class="xp-act">Выполнил еженедельный квест</span><span class="xp-pts">+200</span></div>
+          <div class="xp-row hi"><span class="xp-act">Закрыл месяц в рамках бюджета</span><span class="xp-pts">+500</span></div>
+          <div class="xp-row"><span class="xp-act">Открыл достижение</span><span class="xp-pts">+100–500</span></div>
+        </div>
+      </div>
+      <div class="reveal d1">
+        <div class="eyebrow-muted" style="margin-bottom:20px">Уровни персонажа</div>
+        <div class="level-list">
+          <div class="level-row"><div class="lv-num">1–5</div><div class="lv-name">Новичок</div><div class="lv-range muted">0 – 800 XP</div></div>
+          <div class="level-row"><div class="lv-num">6–10</div><div class="lv-name">Копилка</div><div class="lv-range muted">800 – 2&thinsp;500 XP</div></div>
+          <div class="level-row cur"><div class="lv-num">11–20</div><div class="lv-name">Экономист</div><div class="lv-range muted">2&thinsp;500 – 6&thinsp;000 XP</div></div>
+          <div class="level-row"><div class="lv-num">21–35</div><div class="lv-name">Финансист</div><div class="lv-range muted">6&thinsp;000 – 15&thinsp;000 XP</div></div>
+          <div class="level-row"><div class="lv-num">36–50</div><div class="lv-name">Мастер бюджета</div><div class="lv-range muted">15&thinsp;000 – 30&thinsp;000 XP</div></div>
+          <div class="level-row"><div class="lv-num">50+</div><div class="lv-name">Финансовый гуру</div><div class="lv-range muted">30&thinsp;000+ XP</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="reveal" style="margin-bottom:48px">
+      <div class="eyebrow">Тарифы</div>
+      <h2 class="sec-title">Бесплатно&nbsp;&mdash; это честно.</h2>
+      <p class="sec-sub">Как у Duolingo: большинство функций бесплатно. Premium&nbsp;&mdash; для тех, кто хочет больше.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-col reveal">
+        <div class="pr-plan">Бесплатно</div>
+        <div class="pr-price">Навсегда</div>
+        <ul class="pr-list">
+          <li><span class="pr-ck ok">&#10003;</span>Стрик и заморозка (1/мес)</li>
+          <li><span class="pr-ck ok">&#10003;</span>Опыт, уровни 1–50</li>
+          <li><span class="pr-ck ok">&#10003;</span>Ежедневные и еженедельные квесты</li>
+          <li><span class="pr-ck ok">&#10003;</span>Лиги Бронза &rarr; Золото</li>
+          <li><span class="pr-ck ok">&#10003;</span>Финансовый возраст</li>
+          <li><span class="pr-ck ok">&#10003;</span>Базовый бюджет и категории</li>
+        </ul>
+        <div class="pr-cta">
+          <a href="#waitlist" class="btn btn-ghost btn-lg" style="width:100%;display:flex">Записаться бесплатно</a>
+        </div>
+      </div>
+      <div class="pricing-col premium reveal d1">
+        <div class="pr-tag">Рекомендуем</div>
+        <div class="pr-plan">Premium</div>
+        <div class="pr-price">от <strong>299&thinsp;&#8381;</strong>&thinsp;/&thinsp;мес</div>
+        <ul class="pr-list">
+          <li><span class="pr-ck ok">&#10003;</span>Всё из бесплатного</li>
+          <li><span class="pr-ck ok">&#10003;</span>До 3 заморозок стрика в месяц</li>
+          <li><span class="pr-ck ok">&#10003;</span>Персональные квесты под твои паттерны</li>
+          <li><span class="pr-ck ok">&#10003;</span>Больше слотов для квестов (до 8)</li>
+          <li><span class="pr-ck ok">&#10003;</span>Бриллиантовая лига</li>
+          <li><span class="pr-ck ok">&#10003;</span>Расширенная аналитика</li>
+          <li><span class="pr-ck ok">&#10003;</span>Кастомизация профиля &middot; Без рекламы</li>
+        </ul>
+        <div class="pr-cta">
+          <a href="#waitlist" class="btn btn-primary btn-lg" style="width:100%;display:flex">Записаться на Premium</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta-section" id="waitlist">
+  <div class="cta-glow"></div>
+  <div class="container">
+    <div class="cta-inner reveal">
+      <h2 class="cta-title">
+        Стрик начинается<br>
+        с&nbsp;<span class="accent">первого дня.</span>
+      </h2>
+      <p class="cta-sub">Запишись сейчас&nbsp;&mdash; получишь ранний доступ и Premium на первый месяц бесплатно.</p>
+      <div id="cta-wrap">
+        <div class="cta-form">
+          <input class="input" type="email" id="cta-email" placeholder="твой@email.com" autocomplete="email">
+          <button class="btn btn-primary btn-lg" onclick="submitForm('cta')">Записаться</button>
+        </div>
+        <p class="form-meta">Уже <strong>1&thinsp;247</strong> человек. Никакого спама.</p>
+      </div>
+      <div class="form-success" id="cta-success">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="currentColor" stroke-width="1.5"/><path d="M7 11l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Записан! Premium первого месяца&nbsp;&mdash; твой.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="foot-inner">
+      <span class="foot-copy">&copy; 2025 Notch. Приложение в разработке.</span>
+      <div class="foot-links">
+        <a href="#">Конфиденциальность</a>
+        <a href="#">Поддержка</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ── THEME ── */
+  const html = document.documentElement;
+
+  function applyTheme(t) {
+    html.setAttribute('data-theme', t);
+    localStorage.setItem('notch-theme', t);
+  }
+
+  (function() {
+    const saved = localStorage.getItem('notch-theme');
+    const system = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    applyTheme(saved || system);
+  })();
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ── SCROLL REVEAL ── */
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  /* ── PHONE BARS ── */
+  const phoneObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(() => {
+          const fa = document.getElementById('pf-fa');
+          const xp = document.getElementById('pf-xp');
+          if (fa) fa.style.width = '47%';
+          if (xp) xp.style.width = '71%';
+        }, 300);
+        phoneObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.4 });
+  const phone = document.querySelector('.phone');
+  if (phone) phoneObs.observe(phone);
+
+  /* ── FA TIMELINE ── */
+  const faObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(() => {
+          const f = document.getElementById('fa-fill');
+          if (f) f.style.width = '48%';
+        }, 200);
+        faObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  const faFill = document.getElementById('fa-fill');
+  if (faFill) faObs.observe(faFill.closest('.fa-timeline'));
+
+  /* ── STREAK COUNTER ── */
+  let streakDone = false;
+  const streakObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !streakDone) {
+        streakDone = true;
+        const el = document.getElementById('streak-num');
+        let n = 0;
+        const tick = () => { n = Math.min(n + 2, 47); el.textContent = n; if (n < 47) requestAnimationFrame(tick); };
+        setTimeout(() => requestAnimationFrame(tick), 150);
+        streakObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  const sn = document.getElementById('streak-num');
+  if (sn) streakObs.observe(sn);
+
+  /* ── LEGENDARY BAR ── */
+  const legObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        setTimeout(() => {
+          const b = document.getElementById('leg-bar');
+          if (b) b.style.cssText += 'width:47%;transition:width 1.2s cubic-bezier(0.23,1,0.32,1)';
+        }, 200);
+        legObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.6 });
+  const legBar = document.getElementById('leg-bar');
+  if (legBar) legObs.observe(legBar.closest('.ach-leg-featured'));
+
+  /* ── FORMS ── */
+  const FORMSPREE = 'https://formspree.io/f/xojyyzwd';
+
+  function showSuccess(id) {
+    const wrap = document.getElementById(id === 'hero' ? 'hero-wrap' : 'cta-wrap');
+    const succ = document.getElementById(id + '-success');
+    if (!wrap) return;
+    wrap.style.opacity = '0';
+    wrap.style.transform = 'translateY(-6px)';
+    wrap.style.transition = 'opacity .25s, transform .25s';
+    setTimeout(() => { wrap.style.display = 'none'; if (succ) succ.classList.add('show'); }, 250);
+  }
+
+  async function submitForm(id) {
+    const email = document.getElementById(id + '-email');
+    if (!email) return;
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+      email.style.borderColor = 'var(--red)';
+      email.focus();
+      setTimeout(() => { email.style.borderColor = ''; }, 2000);
+      return;
+    }
+
+    const btn = email.closest('.form-row, .cta-form').querySelector('button');
+    const orig = btn.textContent;
+    btn.textContent = 'Отправляем…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(FORMSPREE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: email.value.trim(), source: id })
+      });
+      if (!res.ok) throw new Error();
+      showSuccess(id);
+    } catch {
+      btn.textContent = 'Ошибка — попробуй ещё';
+      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
+    }
+  }
+
+  document.querySelectorAll('input[type="email"]').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitForm(inp.id === 'hero-email' ? 'hero' : 'cta');
+    });
+  });
+</script>
+</body>
+</html>
