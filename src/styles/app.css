@@ -704,6 +704,8 @@ body {
   border-radius: 14px; padding: 11px 8px;
   display: flex; flex-direction: column; align-items: center; gap: 3px;
 }
+.stat-chip-btn { cursor: pointer; transition: background .15s, transform .1s; -webkit-tap-highlight-color: transparent; }
+.stat-chip-btn:active { background: var(--s2); transform: scale(.96); }
 .stat-chip-val {
   font-family: 'Unbounded', sans-serif;
   font-size: 22px; font-weight: 800; line-height: 1; letter-spacing: -.01em;
