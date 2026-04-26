@@ -220,6 +220,8 @@ export function openSettings() {
   document.getElementById('s-income').value  = user.monthlyIncome || '';
   const savings = Math.max(0, (user.monthlyIncome || 0) - (user.monthlyBudget || 0));
   document.getElementById('s-savings').value = savings || '';
+  const t = localStorage.getItem('notch-theme') || 'system';
+  document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.t === t));
   document.getElementById('settings-modal').classList.add('open');
   setTimeout(() => document.getElementById('s-name').focus(), 350);
 }

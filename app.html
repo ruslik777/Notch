@@ -12,6 +12,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function(){
+      var t=localStorage.getItem('notch-theme')||'system';
+      var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);
+      document.documentElement.setAttribute('data-theme',d?'dark':'light');
+    })();
+  </script>
   <link rel="stylesheet" href="/src/styles/app.css">
 </head>
 <body>
@@ -547,6 +554,14 @@
         <label class="settings-label">Накопления в месяц</label>
         <input class="settings-input" id="s-savings" type="number" inputmode="numeric" placeholder="15 000">
         <p class="settings-hint">Бюджет = доход − накопления</p>
+      </div>
+      <div class="settings-field">
+        <label class="settings-label">Тема оформления</label>
+        <div class="theme-picker" id="theme-picker">
+          <button class="theme-btn" data-t="light"  onclick="setTheme('light')">Светлая</button>
+          <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')">Тёмная</button>
+          <button class="theme-btn" data-t="system" onclick="setTheme('system')">Авто</button>
+        </div>
       </div>
       <button class="btn btn-primary" id="settings-save-btn" onclick="saveSettings()">Сохранить</button>
     </div>

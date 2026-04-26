@@ -76,6 +76,17 @@ export function switchProfileTab(tab) {
   if (tab === 'friends')  { renderFriendsTab(); }
 }
 
+/* ── Theme ── */
+
+export function setTheme(pref) {
+  localStorage.setItem('notch-theme', pref);
+  const isDark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.t === pref);
+  });
+}
+
 /* ── Premium ── */
 
 export function isPremium() { return !!(STATE.user?.premium); }
@@ -111,6 +122,11 @@ async function init() {
   initBioButton();
   updateNotifToggle();
   updateExchangeRates();
+
+  // sync system theme changes when in auto mode
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem('notch-theme') || 'system') === 'system') setTheme('system');
+  });
 
   const urlAction = new URLSearchParams(location.search).get('action');
   const { data: { session } } = await supa.auth.getSession();
@@ -163,6 +179,7 @@ Object.assign(window, {
 
   // settings
   openSettings, closeSettings, handleSettingsOverlay, saveSettings,
+  setTheme,
 
   // currency
   setCurrency,
