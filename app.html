@@ -155,15 +155,15 @@
 
           <!-- Stat chips -->
           <div class="stat-chips">
-            <div class="stat-chip stat-chip-btn" onclick="switchTab('profile');setTimeout(()=>switchProfileTab('settings'),80)">
+            <div class="stat-chip stat-chip-btn" onclick="openBudgetSheet()">
               <div class="stat-chip-val" id="h-chip-budget" style="color:var(--ac)">—</div>
               <div class="stat-chip-lbl">бюджет</div>
             </div>
-            <div class="stat-chip stat-chip-btn" onclick="switchTab('analytics')">
+            <div class="stat-chip stat-chip-btn" onclick="openDaysSheet()">
               <div class="stat-chip-val" id="h-chip-days" style="color:var(--gold)">—</div>
               <div class="stat-chip-lbl">запас дней</div>
             </div>
-            <div class="stat-chip stat-chip-btn" onclick="switchTab('profile');setTimeout(()=>switchProfileTab('settings'),80)">
+            <div class="stat-chip stat-chip-btn" onclick="openGoalsSheet()">
               <div class="stat-chip-val" id="h-chip-goals" style="color:var(--ac)">—</div>
               <div class="stat-chip-lbl">цели</div>
             </div>
@@ -783,6 +783,14 @@
       </div>
       <button class="lock-alt-btn" onclick="pinSetupSkip()">Пропустить</button>
     </div>
+  </div>
+
+  <!-- ── STAT SHEETS (budget / days / goals) ── -->
+  <div id="ss-overlay" class="fp-overlay" onclick="closeStatSheet()"></div>
+  <div id="ss-sheet" class="fp-sheet">
+    <div class="fp-handle"></div>
+    <button class="fp-close" onclick="closeStatSheet()">✕</button>
+    <div id="ss-content"></div>
   </div>
 
   <!-- ── FRIEND PROFILE SHEET ── -->

@@ -2,7 +2,7 @@ import { CATS, CAT_SVG, INCOME_TYPES, ACHIEVEMENTS } from './config.js';
 import { STATE, DB, AUTH, supa } from './api.js';
 import { _syncUser, _insertIncome, _insertExpense } from './api.js';
 import { toDay, fmt, getCur } from './format.js';
-import { addXP, incrementStreak, checkQuestCompletion, checkAchievements } from './gamification.js';
+import { addXP, incrementStreak, checkQuestCompletion, checkAchievements, getFinancialAge } from './gamification.js';
 import { showPostExpenseNudge } from './friends.js';
 import { renderSavingsGoals, renderFixedExps, renderAll } from './render.js';
 
@@ -543,4 +543,129 @@ export function closeScanner() {
   if (_scannerRAF)    { cancelAnimationFrame(_scannerRAF); _scannerRAF = null; }
   if (_scannerStream) { _scannerStream.getTracks().forEach(t => t.stop()); _scannerStream = null; }
   document.getElementById('qr-scanner').classList.remove('open');
+}
+
+/* ── Stat sheets (budget / days / goals) ── */
+
+function _openStatSheet(html) {
+  document.getElementById('ss-content').innerHTML = html;
+  document.getElementById('ss-overlay').classList.add('open');
+  document.getElementById('ss-sheet').classList.add('open');
+}
+
+export function closeStatSheet() {
+  document.getElementById('ss-overlay')?.classList.remove('open');
+  document.getElementById('ss-sheet')?.classList.remove('open');
+}
+
+export function openBudgetSheet() {
+  const user       = STATE.user; if (!user) return;
+  const now        = new Date();
+  const mStart     = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const exps       = STATE.exps || [];
+  const monthExp   = exps.filter(e => e.date >= mStart).reduce((s, e) => s + e.amount, 0);
+  const fixedTotal = (user.fixedExps || []).reduce((s, e) => s + e.amount, 0);
+  const totalSpent = monthExp + fixedTotal;
+  const budget     = user.monthlyBudget || 0;
+  const remaining  = budget - totalSpent;
+  const pct        = budget > 0 ? Math.min(Math.round(totalSpent / budget * 100), 100) : 0;
+  const color      = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--gold)' : 'var(--ac)';
+  const dailyLimit = budget > 0 ? budget / 30 : 0;
+  const month      = now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+
+  _openStatSheet(`
+    <div class="ss-hero">
+      <div class="ss-title">Бюджет</div>
+      <div class="ss-sub">${month}</div>
+      <div class="ss-big" style="color:${color}">${budget > 0 ? pct + '%' : '—'}</div>
+      <div class="ss-sub">${budget > 0 ? 'потрачено из ' + fmt(budget) : 'бюджет не задан'}</div>
+    </div>
+    ${budget > 0 ? `
+    <div class="ss-bar-wrap">
+      <div class="fp-xp-bar-wrap"><div class="fp-xp-bar" style="width:${pct}%;background:${color}"></div></div>
+      <div class="fp-xp-labels"><span>${fmt(totalSpent)}</span><span>${fmt(budget)}</span></div>
+    </div>` : ''}
+    <div class="ss-rows">
+      <div class="ss-row"><span>Переменные</span><span>${fmt(monthExp)}</span></div>
+      ${fixedTotal > 0 ? `<div class="ss-row"><span>Постоянные</span><span>${fmt(fixedTotal)}</span></div>` : ''}
+      ${budget > 0 ? `
+      <div class="ss-row"><span>Осталось</span><b style="color:${remaining >= 0 ? 'var(--green)' : 'var(--red)'}">${remaining >= 0 ? fmt(remaining) : '−' + fmt(-remaining)}</b></div>
+      <div class="ss-row"><span>Суточный лимит</span><span>${fmt(dailyLimit)}/день</span></div>` : ''}
+    </div>
+    <div class="ss-footer">
+      <button class="ss-btn" onclick="closeStatSheet();switchTab('profile');setTimeout(()=>switchProfileTab('settings'),80)">Изменить бюджет</button>
+    </div>`);
+}
+
+export function openDaysSheet() {
+  const user = STATE.user; if (!user) return;
+  const exps = STATE.exps || [];
+  const fa   = getFinancialAge(user, exps, STATE.incomes || []);
+  const tiers = [
+    { days: 30,  name: 'Подушка',  desc: '1 месяц запаса' },
+    { days: 90,  name: 'Свободен', desc: '3 месяца запаса' },
+    { days: 180, name: 'Крепость', desc: '6 месяцев запаса' },
+  ];
+  const tiersHtml = tiers.map(t => {
+    const done = fa.days >= t.days;
+    const pct  = Math.min(Math.round(fa.days / t.days * 100), 100);
+    return `<div class="ss-tier ${done ? 'done' : ''}">
+      <div class="ss-tier-head">
+        <span class="ss-tier-name">${t.name}</span>
+        <span class="ss-tier-desc">${t.desc}</span>
+        ${done ? '<span class="ss-tier-badge">✓</span>' : `<span class="ss-tier-pct">${pct}%</span>`}
+      </div>
+      <div class="fp-xp-bar-wrap" style="margin-top:6px">
+        <div class="fp-xp-bar" style="width:${pct}%;${done ? 'background:var(--green)' : ''}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  _openStatSheet(`
+    <div class="ss-hero">
+      <div class="ss-title">Запас дней</div>
+      <div class="ss-big" style="color:var(--gold)">${fa.days > 0 ? fa.days : '—'}</div>
+      <div class="ss-sub">${fa.days > 0 ? 'дней финансового буфера' : 'недостаточно данных'}</div>
+    </div>
+    <div class="ss-rows">
+      <div class="ss-row ss-row-hint">Сколько дней ты можешь прожить на свои текущие сбережения при обычных расходах</div>
+    </div>
+    <div class="ss-section-title">Цели запаса</div>
+    <div class="ss-tiers">${tiersHtml}</div>`);
+}
+
+export function openGoalsSheet() {
+  const user  = STATE.user; if (!user) return;
+  const goals = user.savingsGoals || [];
+
+  const goalsHtml = goals.length === 0
+    ? '<div class="ss-empty">Нет целей накопления.<br>Добавь первую!</div>'
+    : goals.map(g => {
+        const pct  = Math.min(Math.round((g.saved || 0) / g.target * 100), 100);
+        const done = (g.saved || 0) >= g.target;
+        return `<div class="ss-goal ${done ? 'done' : ''}">
+          <div class="ss-goal-head">
+            <span class="ss-goal-name">${g.name}</span>
+            <span class="ss-goal-pct ${done ? 'done' : ''}">${done ? '✓ Готово' : pct + '%'}</span>
+          </div>
+          <div class="fp-xp-bar-wrap" style="margin:6px 0 4px">
+            <div class="fp-xp-bar" style="width:${pct}%;${done ? 'background:var(--green)' : ''}"></div>
+          </div>
+          <div class="ss-goal-amounts">
+            <span>${fmt(g.saved || 0)}</span><span>${fmt(g.target)}</span>
+          </div>
+          ${!done ? `<button class="ss-deposit-btn" onclick="depositSavingsGoal('${g.id}')">+ Пополнить</button>` : ''}
+        </div>`;
+      }).join('');
+
+  _openStatSheet(`
+    <div class="ss-hero">
+      <div class="ss-title">Цели накопления</div>
+      <div class="ss-big" style="color:var(--ac)">${goals.length}</div>
+      <div class="ss-sub">${goals.filter(g => (g.saved||0) >= g.target).length} из ${goals.length} выполнено</div>
+    </div>
+    <div class="ss-goals-list">${goalsHtml}</div>
+    <div class="ss-footer">
+      <button class="ss-btn" onclick="closeStatSheet();addSavingsGoal()">+ Добавить цель</button>
+    </div>`);
 }

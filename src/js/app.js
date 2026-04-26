@@ -27,6 +27,7 @@ import {
   showTour, closeTour,
   shareAchievement, closeShareOverlay,
   openScanner, closeScanner,
+  openBudgetSheet, openDaysSheet, openGoalsSheet, closeStatSheet,
 } from './modals.js';
 import {
   submitAuth, signOut, confirmReset, switchAuthTab,
@@ -210,6 +211,9 @@ Object.assign(window, {
   selectCat, validateForm,
   openEditById, saveExpense, deleteExpense,
   openScanner, closeScanner,
+
+  // stat sheets
+  openBudgetSheet, openDaysSheet, openGoalsSheet, closeStatSheet,
 
   // income modal
   openIncomeModal, closeIncomeModal, handleIncomeOverlayClick,
