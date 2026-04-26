@@ -49,6 +49,7 @@ import {
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
   sendNudge, toggleReaction, loadActivityFeed,
   closeNudgePrompt,
+  openFriendProfile, closeFriendProfile,
 } from './friends.js';
 import { _bioLabel } from './notifications.js';
 
@@ -257,6 +258,7 @@ Object.assign(window, {
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
   sendNudge, toggleReaction, loadActivityFeed,
   closeNudgePrompt,
+  openFriendProfile, closeFriendProfile,
 
   // notifications
   toggleNotifications, setNotifChar,

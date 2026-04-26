@@ -1,6 +1,6 @@
 import { STATE, DB, AUTH, supa } from './api.js';
-import { getLevelNum } from './gamification.js';
-import { SUPABASE_URL } from './config.js';
+import { getLevelNum, getLevel } from './gamification.js';
+import { SUPABASE_URL, ACHIEVEMENTS } from './config.js';
 
 export let _friendsCache = [];
 
@@ -104,8 +104,8 @@ export function _renderFriendsList() {
     html += `<div class="friends-section-lbl">Друзья (${accepted.length})</div>`;
     html += accepted.map(f => `
       <div class="friend-card">
-        <div class="friend-card-av">${f.name.charAt(0).toUpperCase()}</div>
-        <div class="friend-card-info">
+        <div class="friend-card-av" onclick="openFriendProfile('${f.friendUid}')" style="cursor:pointer">${f.name.charAt(0).toUpperCase()}</div>
+        <div class="friend-card-info" onclick="openFriendProfile('${f.friendUid}')" style="cursor:pointer">
           <div class="friend-card-name">${_fesc(f.name)}</div>
           <div class="friend-card-sub">${f.notchId} · Ур.${getLevelNum(f.xp)} · 🔥${f.streak}</div>
         </div>
@@ -284,6 +284,82 @@ export function renderWeeklyRace() {
       <span class="race-xp">${(e.xpW || 0).toLocaleString('ru')} XP</span>
     </div>`).join('');
   wrap.innerHTML = `<div class="race-card"><div class="race-title">Забег недели</div>${rows}</div>`;
+}
+
+/* ── Friend profile sheet ── */
+
+export function closeFriendProfile() {
+  document.getElementById('fp-overlay')?.classList.remove('open');
+  document.getElementById('fp-sheet')?.classList.remove('open');
+}
+
+export async function openFriendProfile(friendUid) {
+  const overlay = document.getElementById('fp-overlay');
+  const sheet   = document.getElementById('fp-sheet');
+  const content = document.getElementById('fp-content');
+  if (!overlay || !sheet || !content) return;
+
+  content.innerHTML = '<div class="fp-loading">Загрузка...</div>';
+  overlay.classList.add('open');
+  sheet.classList.add('open');
+
+  const cached = _friendsCache.find(f => f.friendUid === friendUid);
+
+  let ach = [];
+  try {
+    const { data } = await supa.rpc('get_friend_public_profile', { friend_uid: friendUid });
+    const prof = Array.isArray(data) ? data[0] : data;
+    if (prof?.achievements) {
+      ach = Array.isArray(prof.achievements) ? prof.achievements : Object.keys(prof.achievements);
+    }
+  } catch(e) {}
+
+  const xp      = cached?.xp || 0;
+  const lvl     = getLevel(xp);
+  const lvlNum  = getLevelNum(xp);
+  const pct     = Math.round(lvl.progress * 100);
+  const name    = cached?.name || '—';
+  const notchId = cached?.notchId || '';
+  const streak  = cached?.streak || 0;
+  const xpW     = cached?.xpThisWeek || 0;
+
+  const achHtml = ACHIEVEMENTS.map(a => {
+    const unlocked = ach.includes(a.id);
+    return `<div class="fp-ach ${unlocked ? 'unlocked' : 'locked'}">
+      <div class="fp-ach-icon">${a.icon}</div>
+      <div class="fp-ach-name">${a.name}</div>
+    </div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="fp-hero">
+      <div class="fp-av">${name.charAt(0).toUpperCase()}</div>
+      <div class="fp-name">${_fesc(name)}</div>
+      <div class="fp-notch">${notchId}</div>
+    </div>
+    <div class="fp-stats">
+      <div class="fp-stat">
+        <div class="fp-stat-val">${lvlNum}</div>
+        <div class="fp-stat-lbl">Уровень</div>
+      </div>
+      <div class="fp-stat">
+        <div class="fp-stat-val">🔥${streak}</div>
+        <div class="fp-stat-lbl">Стрик</div>
+      </div>
+      <div class="fp-stat">
+        <div class="fp-stat-val">${xpW.toLocaleString('ru')}</div>
+        <div class="fp-stat-lbl">XP за неделю</div>
+      </div>
+    </div>
+    <div class="fp-section">
+      <div class="fp-section-title">${lvl.name} · ${pct}% к следующему</div>
+      <div class="fp-xp-bar-wrap"><div class="fp-xp-bar" style="width:${pct}%"></div></div>
+      <div class="fp-xp-labels"><span>${xp.toLocaleString('ru')} XP</span><span>${lvl.next === Infinity ? '∞' : lvl.next.toLocaleString('ru')} XP</span></div>
+    </div>
+    <div class="fp-section" style="padding-bottom:8px">
+      <div class="fp-section-title">Достижения</div>
+      <div class="fp-ach-grid">${achHtml}</div>
+    </div>`;
 }
 
 /* ── Friend actions ── */
