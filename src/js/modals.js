@@ -3,6 +3,7 @@ import { STATE, DB, AUTH, supa } from './api.js';
 import { _syncUser, _insertIncome, _insertExpense } from './api.js';
 import { toDay, fmt, getCur } from './format.js';
 import { addXP, incrementStreak, checkQuestCompletion, checkAchievements } from './gamification.js';
+import { showPostExpenseNudge } from './friends.js';
 import { renderSavingsGoals, renderFixedExps, renderAll } from './render.js';
 
 /* ── Expense modal ── */
@@ -132,6 +133,7 @@ export async function saveExpense() {
 
   closeModal();
   renderAll();
+  setTimeout(showPostExpenseNudge, 600);
 }
 
 export async function deleteExpense(id) {

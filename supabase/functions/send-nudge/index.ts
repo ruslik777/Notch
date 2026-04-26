@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
   const svc = createClient(SUPA_URL, SUPA_SERVICE);
 
-  // Rate limit: 1 nudge per friend per day
+  // Once per day: insert fails if already nudged today
   const today = new Date().toISOString().slice(0, 10);
   const { error: rateErr } = await svc.from('nudges').insert({
     from_uid: user.id, to_uid, date: today,

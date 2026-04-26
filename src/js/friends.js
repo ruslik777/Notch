@@ -19,8 +19,17 @@ export function copyNotchId() {
   if (btn) { btn.textContent = 'Скопировано!'; setTimeout(() => { btn.textContent = 'Скопировать'; }, 1800); }
 }
 
+let _nudgedSet = new Set();
+
+async function _loadNudged() {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supa.from('nudges').select('to_uid').eq('from_uid', AUTH.uid).eq('date', today);
+  _nudgedSet = new Set((data || []).map(n => n.to_uid));
+}
+
 export async function loadFriendsData() {
   if (!AUTH.uid) return;
+  await _loadNudged();
   const { data: rows, error } = await supa.from('friendships').select('*');
   if (error || !rows || rows.length === 0) { _friendsCache = []; return; }
   const friendUids = rows.map(r => r.user_id === AUTH.uid ? r.friend_id : r.user_id);
@@ -31,15 +40,16 @@ export async function loadFriendsData() {
     const fuid = r.user_id === AUTH.uid ? r.friend_id : r.user_id;
     const p = pm[fuid] || {};
     return {
-      id:         r.id,
-      friendUid:  fuid,
-      name:       p.uname      || '—',
-      notchId:    p.notch_id   || '',
-      xp:         p.uxp        || 0,
-      xpThisWeek: p.uxp_week   || 0,
-      streak:     p.ustreak    || 0,
-      status:     r.status,
-      isSender:   r.user_id === AUTH.uid,
+      id:            r.id,
+      friendUid:     fuid,
+      name:          p.uname          || '—',
+      notchId:       p.notch_id       || '',
+      xp:            p.uxp            || 0,
+      xpThisWeek:    p.uxp_week       || 0,
+      streak:        p.ustreak        || 0,
+      lastEntryDate: p.last_entry_date || null,
+      status:        r.status,
+      isSender:      r.user_id === AUTH.uid,
     };
   });
 }
@@ -99,7 +109,16 @@ export function _renderFriendsList() {
           <div class="friend-card-name">${_fesc(f.name)}</div>
           <div class="friend-card-sub">${f.notchId} · Ур.${getLevelNum(f.xp)} · 🔥${f.streak}</div>
         </div>
-        <button class="fcbtn nudge" id="nudge-${f.friendUid}" onclick="sendNudge('${f.friendUid}','${_fesc(f.name)}')">Нюдж</button>
+        ${_nudgedSet.has(f.friendUid)
+          ? `<button class="fcbtn nudge done" disabled>
+               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+               Напомнено
+             </button>`
+          : `<button class="fcbtn nudge" id="nudge-${f.friendUid}" onclick="sendNudge('${f.friendUid}','${_fesc(f.name)}')">
+               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+               Напомнить
+             </button>`
+        }
         <button class="fcbtn deny"  onclick="removeFriend('${f.id}')" title="Удалить" style="margin-left:6px">✕</button>
       </div>`).join('');
   }
@@ -112,9 +131,19 @@ export function _renderFriendsList() {
 
 /* ── Nudge ── */
 
+const _DONE_BTN = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Напомнено`;
+const _BELL_BTN = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Напомнить`;
+
+function _allNudgeBtns(friendUid) {
+  return [
+    document.getElementById('nudge-'  + friendUid),
+    document.getElementById('pnudge-' + friendUid),
+  ].filter(Boolean);
+}
+
 export async function sendNudge(friendUid, friendName) {
-  const btn = document.getElementById('nudge-' + friendUid);
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  const btns = _allNudgeBtns(friendUid);
+  btns.forEach(b => { b.disabled = true; b.textContent = '...'; });
   try {
     const { data: { session } } = await supa.auth.getSession();
     const resp = await fetch(SUPABASE_URL + '/functions/v1/send-nudge', {
@@ -122,17 +151,51 @@ export async function sendNudge(friendUid, friendName) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
       body: JSON.stringify({ to_uid: friendUid, from_name: STATE.user?.name || 'Друг' }),
     });
-    if (resp.status === 429) {
-      if (btn) { btn.textContent = 'Уже сегодня'; }
-      return;
-    }
-    if (btn) {
-      btn.textContent = 'Отправлен!';
-      setTimeout(() => { btn.textContent = 'Нюдж'; btn.disabled = false; }, 2500);
+    if (resp.status === 429 || resp.ok || resp.status === 200) {
+      _nudgedSet.add(friendUid);
+      btns.forEach(b => { b.innerHTML = _DONE_BTN; b.classList.add('done'); });
+    } else {
+      btns.forEach(b => { b.innerHTML = _BELL_BTN; b.disabled = false; });
     }
   } catch(e) {
-    if (btn) { btn.textContent = 'Нюдж'; btn.disabled = false; }
+    btns.forEach(b => { b.innerHTML = _BELL_BTN; b.disabled = false; });
   }
+}
+
+/* ── Post-expense nudge prompt ── */
+
+let _nudgePromptTimer = null;
+
+export function closeNudgePrompt() {
+  const el = document.getElementById('nudge-prompt');
+  if (el) el.classList.remove('open');
+  if (_nudgePromptTimer) { clearTimeout(_nudgePromptTimer); _nudgePromptTimer = null; }
+}
+
+export function showPostExpenseNudge() {
+  const today = new Date().toISOString().slice(0, 10);
+  const toNudge = _friendsCache.filter(f =>
+    f.status === 'accepted' &&
+    !_nudgedSet.has(f.friendUid) &&
+    f.lastEntryDate !== today
+  );
+  if (!toNudge.length) return;
+
+  const list = document.getElementById('nudge-prompt-list');
+  const el   = document.getElementById('nudge-prompt');
+  if (!list || !el) return;
+
+  list.innerHTML = toNudge.slice(0, 4).map(f => `
+    <div class="nudge-prompt-row">
+      <span class="nudge-prompt-name">${_fesc(f.name)}</span>
+      <button class="fcbtn nudge" id="pnudge-${f.friendUid}"
+              onclick="sendNudge('${f.friendUid}','${_fesc(f.name)}')">
+        ${_BELL_BTN}
+      </button>
+    </div>`).join('');
+
+  el.classList.add('open');
+  _nudgePromptTimer = setTimeout(closeNudgePrompt, 10000);
 }
 
 /* ── Activity feed ── */

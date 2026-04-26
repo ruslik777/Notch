@@ -1351,7 +1351,27 @@ html[data-theme="dark"] .ring-track { stroke: rgba(255,255,255,.06); }
   white-space: nowrap;
 }
 .fcbtn.nudge:active { transform: scale(.94); background: var(--ac); color: #fff; }
-.fcbtn.nudge:disabled { opacity: .5; pointer-events: none; }
+.fcbtn.nudge:disabled { pointer-events: none; }
+.fcbtn.nudge.done { background: var(--s2); color: var(--t3); border-color: var(--brd); pointer-events: none; display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Post-expense nudge prompt ── */
+.nudge-prompt {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--s1); border-top: 1px solid var(--brd);
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  z-index: 490; transform: translateY(110%);
+  transition: transform .35s var(--ease-drawer);
+  box-shadow: 0 -8px 32px rgba(0,0,0,.12);
+}
+.nudge-prompt.open { transform: translateY(0); }
+.nudge-prompt-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.nudge-prompt-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.nudge-prompt-close { background: none; border: none; color: var(--t2); font-size: 18px; cursor: pointer; padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.nudge-prompt-close:active { background: var(--s2); }
+.nudge-prompt-list { display: flex; flex-direction: column; gap: 8px; }
+.nudge-prompt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nudge-prompt-name { font-size: 14px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Activity feed ── */
 .feed-empty {

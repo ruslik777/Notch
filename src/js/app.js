@@ -48,6 +48,7 @@ import {
   copyNotchId, searchFriend, sendFriendReq,
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
   sendNudge, toggleReaction, loadActivityFeed,
+  closeNudgePrompt,
 } from './friends.js';
 import { _bioLabel } from './notifications.js';
 
@@ -255,6 +256,7 @@ Object.assign(window, {
   copyNotchId, searchFriend, sendFriendReq,
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
   sendNudge, toggleReaction, loadActivityFeed,
+  closeNudgePrompt,
 
   // notifications
   toggleNotifications, setNotifChar,
