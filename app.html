@@ -349,7 +349,14 @@
             <button class="notif-toggle-btn off" id="notif-toggle-btn" onclick="toggleNotifications()">Включить</button>
           </div>
 
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Биометрия</div></div>
+          <div style="margin:16px 16px 10px"><div class="achiev-title">Безопасность</div></div>
+          <div class="notif-row" style="margin-bottom:8px">
+            <div>
+              <div class="notif-row-title">PIN-код</div>
+              <div class="notif-row-sub" id="pin-status-sub">Защита при каждом входе</div>
+            </div>
+            <button class="notif-toggle-btn" id="pin-mgmt-btn" onclick="openPinChange()">Установить</button>
+          </div>
           <div class="notif-row" style="margin-bottom:8px">
             <div>
               <div class="notif-row-title" id="bio-profile-label">Face ID / Touch ID</div>
@@ -686,6 +693,85 @@
       <button class="share-btn secondary" onclick="closeShareOverlay()">Закрыть</button>
     </div>
     <div class="share-hint" id="share-hint"></div>
+  </div>
+
+  <!-- ── LOCK SCREEN ── -->
+  <div id="lock-screen" style="display:none">
+    <div class="lock-body">
+      <div class="lock-logo">N</div>
+      <div class="lock-app-name">Notch</div>
+      <div class="lock-dots" id="lock-dots">
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+      </div>
+      <div class="lock-error" id="lock-error"></div>
+      <div class="lock-pad">
+        <button class="lp-btn" onclick="lockPadTap(1)">1</button>
+        <button class="lp-btn" onclick="lockPadTap(2)">2</button>
+        <button class="lp-btn" onclick="lockPadTap(3)">3</button>
+        <button class="lp-btn" onclick="lockPadTap(4)">4</button>
+        <button class="lp-btn" onclick="lockPadTap(5)">5</button>
+        <button class="lp-btn" onclick="lockPadTap(6)">6</button>
+        <button class="lp-btn" onclick="lockPadTap(7)">7</button>
+        <button class="lp-btn" onclick="lockPadTap(8)">8</button>
+        <button class="lp-btn" onclick="lockPadTap(9)">9</button>
+        <button class="lp-btn lp-bio" id="lp-bio-btn" onclick="lockBioTap()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M3 9V6a1 1 0 011-1h3M15 5h3a1 1 0 011 1v3M21 15v3a1 1 0 01-1 1h-3M9 19H6a1 1 0 01-1-1v-3"/>
+            <circle cx="9" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="15" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+            <path d="M9 15c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"/>
+            <path d="M12 7v1.5"/>
+          </svg>
+        </button>
+        <button class="lp-btn" onclick="lockPadTap(0)">0</button>
+        <button class="lp-btn lp-del" onclick="lockPadDel()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/>
+            <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+          </svg>
+        </button>
+      </div>
+      <button class="lock-alt-btn" onclick="lockSignOut()">Выйти из аккаунта</button>
+    </div>
+  </div>
+
+  <!-- ── PIN SETUP SCREEN ── -->
+  <div id="pin-setup-screen" style="display:none">
+    <div class="lock-body">
+      <div class="lock-logo">N</div>
+      <div class="lock-setup-title" id="pin-setup-title">Придумай PIN-код</div>
+      <div class="lock-setup-sub" id="pin-setup-sub">Введи 4 цифры для защиты приложения</div>
+      <div class="lock-dots" id="pin-setup-dots">
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+        <span class="lock-dot"></span>
+      </div>
+      <div class="lock-error" id="pin-setup-error"></div>
+      <div class="lock-pad">
+        <button class="lp-btn" onclick="pinSetupTap(1)">1</button>
+        <button class="lp-btn" onclick="pinSetupTap(2)">2</button>
+        <button class="lp-btn" onclick="pinSetupTap(3)">3</button>
+        <button class="lp-btn" onclick="pinSetupTap(4)">4</button>
+        <button class="lp-btn" onclick="pinSetupTap(5)">5</button>
+        <button class="lp-btn" onclick="pinSetupTap(6)">6</button>
+        <button class="lp-btn" onclick="pinSetupTap(7)">7</button>
+        <button class="lp-btn" onclick="pinSetupTap(8)">8</button>
+        <button class="lp-btn" onclick="pinSetupTap(9)">9</button>
+        <button class="lp-btn lp-empty"></button>
+        <button class="lp-btn" onclick="pinSetupTap(0)">0</button>
+        <button class="lp-btn lp-del" onclick="pinSetupDel()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/>
+            <line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
+          </svg>
+        </button>
+      </div>
+      <button class="lock-alt-btn" onclick="pinSetupSkip()">Пропустить</button>
+    </div>
   </div>
 
 </div>

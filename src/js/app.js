@@ -34,6 +34,11 @@ import {
   offerBioSetup, enableBiometric, dismissBioSetup,
 } from './auth.js';
 import {
+  hasPin, showLock, lockPadTap, lockPadDel, lockBioTap, lockSignOut,
+  startPinSetup, pinSetupTap, pinSetupDel, pinSetupSkip,
+  openPinChange, removePin,
+} from './lock.js';
+import {
   openAvatarPicker, closeAvatarPicker, switchAvatarTab,
   selectAvatarColor, selectPresetAvatar, selectAvatarFrame,
   handleAvatarPhotoUpload, saveAvatar,
@@ -76,6 +81,10 @@ export function switchProfileTab(tab) {
     renderCharPicker(); updateNotifToggle(); updateBioToggle(); renderFixedExps(); renderSavingsGoals();
     const t = localStorage.getItem('notch-theme') || 'system';
     document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.t === t));
+    const pinBtn = document.getElementById('pin-mgmt-btn');
+    const pinSub = document.getElementById('pin-status-sub');
+    if (pinBtn) pinBtn.textContent = hasPin() ? 'Изменить' : 'Установить';
+    if (pinSub) pinSub.textContent = hasPin() ? 'Установлен — нажми чтобы изменить' : 'Защита при каждом входе';
   }
   if (tab === 'friends')  { renderFriendsTab(); }
 }
@@ -132,6 +141,14 @@ async function init() {
     if ((localStorage.getItem('notch-theme') || 'system') === 'system') setTheme('system');
   });
 
+  // re-lock when app comes back to foreground
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !AUTH.uid || !hasPin()) return;
+    const lockEl = document.getElementById('lock-screen');
+    if (lockEl && lockEl.style.display !== 'none') return;
+    showLock(() => {});
+  });
+
   const urlAction = new URLSearchParams(location.search).get('action');
   const { data: { session } } = await supa.auth.getSession();
 
@@ -142,11 +159,23 @@ async function init() {
     if (hasProfile && STATE.user?.onboardingDone) {
       const checked = checkStreak(STATE.user);
       DB.setUser(checked);
-      showScreen('main');
-      renderAll();
-      loadLeague();
-      scheduleStreakReminder();
-      if (urlAction === 'add-expense') setTimeout(openModal, 300);
+      const goMain = () => {
+        showScreen('main');
+        renderAll();
+        loadLeague();
+        scheduleStreakReminder();
+        if (urlAction === 'add-expense') setTimeout(openModal, 300);
+      };
+      if (hasPin()) {
+        showScreen('main'); // render behind lock
+        renderAll();
+        showLock(goMain);
+      } else if (!localStorage.getItem('app_pin_skip')) {
+        goMain();
+        setTimeout(() => startPinSetup(() => {}), 600);
+      } else {
+        goMain();
+      }
     } else {
       showScreen('ob');
     }
@@ -230,6 +259,11 @@ Object.assign(window, {
   // biometric (used by notifications.js toggleBioFromProfile via window)
   isBioAvailable, offerBioSetup,
   toggleBioFromProfile,
+
+  // lock screen
+  lockPadTap, lockPadDel, lockBioTap, lockSignOut,
+  pinSetupTap, pinSetupDel, pinSetupSkip,
+  openPinChange, removePin,
 
   // analytics
   setAnalyticsPeriod,
