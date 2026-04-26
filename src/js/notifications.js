@@ -28,13 +28,17 @@ export async function refreshPushSubscription() {
         applicationServerKey: _urlB64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
-    if (sub) {
-      await supa.from('push_subscriptions').upsert(
-        { user_id: AUTH.uid, subscription: sub.toJSON(), updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
-    }
+    if (sub) await _saveSub(sub);
   } catch(e) { console.warn('push refresh', e); }
+}
+
+function _tz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Moscow'; } catch(e) { return 'Europe/Moscow'; } }
+
+async function _saveSub(sub) {
+  await supa.from('push_subscriptions').upsert(
+    { user_id: AUTH.uid, subscription: sub.toJSON(), timezone: _tz(), updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
 }
 
 async function _subscribePush() {
@@ -46,12 +50,7 @@ async function _subscribePush() {
       userVisibleOnly: true,
       applicationServerKey: _urlB64ToUint8Array(VAPID_PUBLIC_KEY),
     });
-    if (sub) {
-      await supa.from('push_subscriptions').upsert(
-        { user_id: AUTH.uid, subscription: sub.toJSON(), updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
-    }
+    if (sub) await _saveSub(sub);
   } catch(e) { console.warn('push subscribe', e); }
 }
 

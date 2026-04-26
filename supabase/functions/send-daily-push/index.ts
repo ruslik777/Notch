@@ -8,71 +8,100 @@ const SUPA_KEY      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 webpush.setVapidDetails('mailto:rusia25061996@gmail.com', VAPID_PUBLIC, VAPID_PRIVATE);
 
-// MSK = UTC+3
-// 09:00 MSK = 06:00 UTC
-// 20:00 MSK = 17:00 UTC
-// 22:30 MSK = 19:30 UTC
 const SLOTS = [
-  { utcHour: 6,  utcMin: 0,  slot: 'morning',    title: 'Notch',    body: 'Доброе утро! Не забудь записать траты сегодня' },
-  { utcHour: 17, utcMin: 0,  slot: 'evening',    title: 'Notch 🔥', body: 'Стрик в опасности — запиши трату до полуночи' },
-  { utcHour: 19, utcMin: 30, slot: 'lastchance', title: 'Notch 🆘', body: 'Осталось 1.5 часа! Последний шанс сохранить стрик' },
-];
+  { id: 'morning',    hour: 9,  min: 0,  title: 'Notch',    body: 'Доброе утро! Не забудь записать траты сегодня' },
+  { id: 'evening',    hour: 20, min: 0,  title: 'Notch 🔥', body: 'Стрик в опасности — запиши трату до полуночи' },
+  { id: 'lastchance', hour: 22, min: 30, title: 'Notch 🆘', body: 'Осталось 1.5 часа! Последний шанс сохранить стрик' },
+] as const;
+
+type SlotId = typeof SLOTS[number]['id'];
+
+function localHourMin(date: Date, tz: string): { h: number; m: number } {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour: 'numeric', minute: 'numeric', hour12: false,
+    }).formatToParts(date);
+    const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0');
+    const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0');
+    return { h, m };
+  } catch {
+    return { h: date.getUTCHours(), m: date.getUTCMinutes() };
+  }
+}
+
+function localDateStr(date: Date, tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(date); // YYYY-MM-DD
+  } catch {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
+function whichSlot(h: number, m: number): SlotId | null {
+  for (const s of SLOTS) {
+    const diff = (h * 60 + m) - (s.hour * 60 + s.min);
+    if (diff >= 0 && diff < 30) return s.id;
+  }
+  return null;
+}
 
 Deno.serve(async () => {
-  const now = new Date();
-  const h = now.getUTCHours();
-  const m = now.getUTCMinutes();
-
-  const slot = SLOTS.find(s => s.utcHour === h && Math.abs(s.utcMin - m) <= 10);
-  if (!slot) {
-    return new Response(`skip (UTC ${h}:${String(m).padStart(2,'0')})`, { status: 200 });
-  }
-
+  const now  = new Date();
   const supa = createClient(SUPA_URL, SUPA_KEY);
-  const today = now.toISOString().slice(0, 10);
 
-  const { data: subs, error: subsErr } = await supa
+  const { data: subs, error } = await supa
     .from('push_subscriptions')
-    .select('user_id, subscription');
+    .select('user_id, subscription, timezone, sent_morning, sent_evening, sent_lastchance');
 
-  if (subsErr || !subs?.length) {
-    return new Response('no subscriptions', { status: 200 });
-  }
+  if (error || !subs?.length) return new Response('no subs', { status: 200 });
 
   const userIds = subs.map(s => s.user_id);
   const { data: profiles } = await supa
     .from('profiles')
     .select('id, last_entry_date')
     .in('id', userIds);
+  const lastEntry = new Map((profiles ?? []).map(p => [p.id, p.last_entry_date as string | null]));
 
-  const lastEntryMap = new Map((profiles ?? []).map(p => [p.id, p.last_entry_date]));
-  const toNotify = subs.filter(s => {
-    const last = lastEntryMap.get(s.user_id);
-    return !last || last < today;
-  });
+  const sends: Promise<unknown>[] = [];
+  const updates: Promise<unknown>[] = [];
 
-  if (!toNotify.length) {
-    return new Response('all logged today', { status: 200 });
+  for (const sub of subs) {
+    const tz       = sub.timezone || 'Europe/Moscow';
+    const today    = localDateStr(now, tz);
+    const { h, m } = localHourMin(now, tz);
+    const slot     = whichSlot(h, m);
+    if (!slot) continue;
+
+    // Skip if already sent this slot today
+    const sentKey = `sent_${slot}` as keyof typeof sub;
+    if (sub[sentKey] === today) continue;
+
+    // Skip if user already logged today
+    const last = lastEntry.get(sub.user_id);
+    if (last && last >= today) continue;
+
+    const info    = SLOTS.find(s => s.id === slot)!;
+    const payload = JSON.stringify({ title: info.title, body: info.body, tag: 'notch-' + slot });
+
+    sends.push(
+      webpush.sendNotification(sub.subscription as webpush.PushSubscription, payload)
+        .then(() => {
+          updates.push(
+            supa.from('push_subscriptions')
+              .update({ [sentKey]: today })
+              .eq('user_id', sub.user_id)
+          );
+        })
+        .catch(async (err) => {
+          if (err?.statusCode === 410) {
+            await supa.from('push_subscriptions').delete().eq('user_id', sub.user_id);
+          }
+        })
+    );
   }
 
-  const payload = JSON.stringify({ title: slot.title, body: slot.body, tag: 'notch-' + slot.slot });
+  await Promise.allSettled(sends);
+  await Promise.allSettled(updates);
 
-  const results = await Promise.allSettled(
-    toNotify.map(s => webpush.sendNotification(s.subscription as webpush.PushSubscription, payload))
-  );
-
-  // Clean up expired subscriptions (HTTP 410 Gone)
-  const expired = toNotify
-    .filter((_, i) => {
-      const r = results[i];
-      return r.status === 'rejected' && (r.reason as any)?.statusCode === 410;
-    })
-    .map(s => s.user_id);
-
-  if (expired.length) {
-    await supa.from('push_subscriptions').delete().in('user_id', expired);
-  }
-
-  const sent = results.filter(r => r.status === 'fulfilled').length;
-  return new Response(`sent ${sent}/${toNotify.length}, slot: ${slot.slot}`, { status: 200 });
+  return new Response(`done, checked ${subs.length} subs`, { status: 200 });
 });
