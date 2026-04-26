@@ -1,5 +1,6 @@
 import { STATE, DB, AUTH, supa } from './api.js';
 import { getLevelNum } from './gamification.js';
+import { SUPABASE_URL } from './config.js';
 
 export let _friendsCache = [];
 
@@ -47,7 +48,11 @@ export function renderFriendsTab() {
   const user = STATE.user; if (!user) return;
   const el = document.getElementById('my-notch-id');
   if (el) el.textContent = user.notchId || '——';
-  loadFriendsData().then(() => { _renderFriendsList(); renderWeeklyRace(); });
+  loadFriendsData().then(() => {
+    _renderFriendsList();
+    renderWeeklyRace();
+    loadActivityFeed();
+  });
 }
 
 export function _renderFriendsList() {
@@ -94,7 +99,8 @@ export function _renderFriendsList() {
           <div class="friend-card-name">${_fesc(f.name)}</div>
           <div class="friend-card-sub">${f.notchId} · Ур.${getLevelNum(f.xp)} · 🔥${f.streak}</div>
         </div>
-        <button class="fcbtn deny" onclick="removeFriend('${f.id}')" title="Удалить">✕</button>
+        <button class="fcbtn nudge" id="nudge-${f.friendUid}" onclick="sendNudge('${f.friendUid}','${_fesc(f.name)}')">Нюдж</button>
+        <button class="fcbtn deny"  onclick="removeFriend('${f.id}')" title="Удалить" style="margin-left:6px">✕</button>
       </div>`).join('');
   }
 
@@ -103,6 +109,99 @@ export function _renderFriendsList() {
   }
   wrap.innerHTML = html;
 }
+
+/* ── Nudge ── */
+
+export async function sendNudge(friendUid, friendName) {
+  const btn = document.getElementById('nudge-' + friendUid);
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/send-nudge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ to_uid: friendUid, from_name: STATE.user?.name || 'Друг' }),
+    });
+    if (resp.status === 429) {
+      if (btn) { btn.textContent = 'Уже сегодня'; }
+      return;
+    }
+    if (btn) {
+      btn.textContent = 'Отправлен!';
+      setTimeout(() => { btn.textContent = 'Нюдж'; btn.disabled = false; }, 2500);
+    }
+  } catch(e) {
+    if (btn) { btn.textContent = 'Нюдж'; btn.disabled = false; }
+  }
+}
+
+/* ── Activity feed ── */
+
+function _timeAgo(dateStr) {
+  const m = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+  if (m < 1)  return 'только что';
+  if (m < 60) return m + ' мин. назад';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' ч. назад';
+  return Math.floor(h / 24) + ' дн. назад';
+}
+
+function _renderFeedItem(item) {
+  const reactions  = item.feed_reactions || [];
+  const myReaction = reactions.find(r => r.user_id === AUTH.uid)?.emoji || null;
+  const counts     = {};
+  reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+  const EMOJIS = ['🔥', '❤️', '👏'];
+  const btns = EMOJIS.map(e =>
+    `<button class="feed-reaction-btn${myReaction === e ? ' active' : ''}" onclick="toggleReaction('${item.id}','${e}')">${e}${counts[e] ? ' ' + counts[e] : ''}</button>`
+  ).join('');
+  const friend = _friendsCache.find(f => f.friendUid === item.user_id);
+  const displayName = item.payload?.user_name || friend?.name || 'Друг';
+
+  if (item.type === 'achievement') {
+    return `<div class="feed-item">
+      <div class="feed-item-av">${displayName.charAt(0).toUpperCase()}</div>
+      <div class="feed-item-body">
+        <div class="feed-item-text"><b>${_fesc(displayName)}</b> разблокировал <b>${item.payload.icon} ${item.payload.name}</b></div>
+        <div class="feed-item-time">${_timeAgo(item.created_at)}</div>
+        <div class="feed-reactions">${btns}</div>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+export async function loadActivityFeed() {
+  const wrap = document.getElementById('activity-feed-wrap'); if (!wrap) return;
+  const friendUids = _friendsCache.filter(f => f.status === 'accepted').map(f => f.friendUid);
+  if (!friendUids.length) { wrap.innerHTML = '<div class="feed-empty">Добавь друзей, чтобы видеть их активность</div>'; return; }
+
+  const { data, error } = await supa.from('feed_items')
+    .select('id, user_id, type, payload, created_at, feed_reactions(item_id, user_id, emoji)')
+    .in('user_id', friendUids)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !data?.length) { wrap.innerHTML = '<div class="feed-empty">Пока нет активности</div>'; return; }
+  wrap.innerHTML = data.map(_renderFeedItem).filter(Boolean).join('') || '<div class="feed-empty">Пока нет активности</div>';
+}
+
+export async function toggleReaction(itemId, emoji) {
+  const { data: existing } = await supa.from('feed_reactions')
+    .select('item_id')
+    .eq('item_id', itemId)
+    .eq('user_id', AUTH.uid)
+    .single();
+
+  if (existing) {
+    await supa.from('feed_reactions').delete().eq('item_id', itemId).eq('user_id', AUTH.uid);
+  } else {
+    await supa.from('feed_reactions').upsert({ item_id: itemId, user_id: AUTH.uid, emoji });
+  }
+  loadActivityFeed();
+}
+
+/* ── Weekly race ── */
 
 export function _fesc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -123,6 +222,8 @@ export function renderWeeklyRace() {
     </div>`).join('');
   wrap.innerHTML = `<div class="race-card"><div class="race-title">Забег недели</div>${rows}</div>`;
 }
+
+/* ── Friend actions ── */
 
 export async function searchFriend() {
   const input  = document.getElementById('friend-search-input');

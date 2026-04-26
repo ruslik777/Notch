@@ -2,7 +2,7 @@ import { STATE, DB, AUTH, supa, loadState, updateExchangeRates } from './api.js'
 import { renderAll, renderHome, renderProfile, renderFixedExps, renderSavingsGoals } from './render.js';
 import { renderFriendsTab } from './friends.js';
 import {
-  checkStreak, loadLeague,
+  checkStreak, loadLeague, loadFriendsLeague,
   setAnalyticsPeriod, renderInsights,
 } from './gamification.js';
 import {
@@ -47,6 +47,7 @@ import {
 import {
   copyNotchId, searchFriend, sendFriendReq,
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
+  sendNudge, toggleReaction, loadActivityFeed,
 } from './friends.js';
 import { _bioLabel } from './notifications.js';
 
@@ -65,7 +66,7 @@ export function switchTab(tab) {
   if (navEl) navEl.classList.add('active');
   document.getElementById('tab-content').scrollTop = 0;
   renderAll();
-  if (tab === 'quests')  loadLeague();
+  if (tab === 'quests')  { loadLeague(); loadFriendsLeague(); }
   if (tab === 'profile') { updateNotifToggle(); updateBioToggle(); renderCharPicker(); }
 }
 
@@ -253,6 +254,7 @@ Object.assign(window, {
   // friends
   copyNotchId, searchFriend, sendFriendReq,
   acceptFriendReq, declineFriendReq, cancelFriendReq, removeFriend,
+  sendNudge, toggleReaction, loadActivityFeed,
 
   // notifications
   toggleNotifications, setNotifChar,
@@ -274,7 +276,7 @@ Object.assign(window, {
   renderAll, renderHome,
 
   // league
-  loadLeague, scheduleStreakReminder,
+  loadLeague, loadFriendsLeague, scheduleStreakReminder,
 
   // helpers used by notifications.js
   _bioLabel,

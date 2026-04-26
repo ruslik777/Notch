@@ -191,12 +191,33 @@ export function checkAchievements() {
   };
 
   let changed = false;
+  const newlyUnlocked = [];
   ACHIEVEMENTS.forEach(a => {
-    if (!achieved.includes(a.id) && a.check(stats)) { achieved.push(a.id); changed = true; }
+    if (!achieved.includes(a.id) && a.check(stats)) {
+      achieved.push(a.id);
+      newlyUnlocked.push(a);
+      changed = true;
+    }
   });
 
-  if (changed) DB.setAchievs(achieved);
+  if (changed) {
+    DB.setAchievs(achieved);
+    if (newlyUnlocked.length) _postAchievementsToFeed(newlyUnlocked);
+  }
   return achieved;
+}
+
+async function _postAchievementsToFeed(achievements) {
+  const user = STATE.user; if (!user || !AUTH.uid) return;
+  try {
+    for (const a of achievements) {
+      await supa.from('feed_items').insert({
+        user_id: AUTH.uid,
+        type: 'achievement',
+        payload: { id: a.id, name: a.name, icon: a.icon, user_name: user.name },
+      });
+    }
+  } catch(e) { console.warn('feed_items insert', e); }
 }
 
 /* ── Personal quest ── */
@@ -279,6 +300,40 @@ export async function updateLeagueXP(xpGained) {
       league:getLeagueTier(user.xp||0).id, week_start:getWeekStart(),
     }, { onConflict:'user_id' });
   } catch(e) { console.error('updateLeagueXP',e); }
+}
+
+/* ── Friends League ── */
+
+export async function loadFriendsLeague() {
+  const section = document.getElementById('friends-league-section');
+  const board   = document.getElementById('friends-league-board');
+  if (!board) return;
+
+  const { _friendsCache } = await import('./friends.js');
+  const accepted = _friendsCache.filter(f => f.status === 'accepted');
+  if (!accepted.length) { if (section) section.style.display = 'none'; return; }
+  if (section) section.style.display = '';
+
+  const friendUids = accepted.map(f => f.friendUid);
+  const ws = getWeekStart();
+  const { data } = await supa.from('league_entries')
+    .select('user_id, display_name, xp_this_week')
+    .in('user_id', [...friendUids, AUTH.uid])
+    .eq('week_start', ws)
+    .order('xp_this_week', { ascending: false })
+    .limit(10);
+
+  if (!data?.length) { board.innerHTML = '<div class="league-loading">Нет данных</div>'; return; }
+  const medals = ['★', '✦', '◆'];
+  board.innerHTML = data.map((row, i) => {
+    const isMe = row.user_id === AUTH.uid;
+    return `<div class="league-row ${isMe ? 'me' : ''}">
+      <div class="league-rank">${medals[i] || i + 1}</div>
+      <div class="league-avatar">${row.display_name.charAt(0).toUpperCase()}</div>
+      <div class="league-name">${row.display_name}${isMe ? ' (ты)' : ''}</div>
+      <div class="league-xp">${(row.xp_this_week || 0).toLocaleString('ru')} XP</div>
+    </div>`;
+  }).join('');
 }
 
 /* ── Analytics period state ── */
