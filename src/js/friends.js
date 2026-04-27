@@ -31,7 +31,12 @@ export async function loadFriendsData() {
   if (!AUTH.uid) return;
   await _loadNudged();
   const { data: rows, error } = await supa.from('friendships').select('*');
-  if (error || !rows || rows.length === 0) { _friendsCache = []; return; }
+  if (error || !rows || rows.length === 0) {
+    _friendsCache = [];
+    const cntEl = document.getElementById('p-friends-count');
+    if (cntEl) cntEl.textContent = '';
+    return;
+  }
   const friendUids = rows.map(r => r.user_id === AUTH.uid ? r.friend_id : r.user_id);
   const { data: profs } = await supa.rpc('get_profiles_for_ids', { uids: friendUids });
   const pm = {};
@@ -52,6 +57,11 @@ export async function loadFriendsData() {
       isSender:      r.user_id === AUTH.uid,
     };
   });
+  const cntEl = document.getElementById('p-friends-count');
+  if (cntEl) {
+    const n = _friendsCache.filter(f => f.status === 'accepted').length;
+    cntEl.textContent = n > 0 ? n : '';
+  }
 }
 
 export function renderFriendsTab() {
@@ -284,6 +294,19 @@ export function renderWeeklyRace() {
       <span class="race-xp">${(e.xpW || 0).toLocaleString('ru')} XP</span>
     </div>`).join('');
   wrap.innerHTML = `<div class="race-card"><div class="race-title">Забег недели</div>${rows}</div>`;
+}
+
+/* ── Friends sheet ── */
+
+export function openFriendsSheet() {
+  document.getElementById('friends-overlay')?.classList.add('open');
+  document.getElementById('friends-sheet')?.classList.add('open');
+  renderFriendsTab();
+}
+
+export function closeFriendsSheet() {
+  document.getElementById('friends-overlay')?.classList.remove('open');
+  document.getElementById('friends-sheet')?.classList.remove('open');
 }
 
 /* ── Friend profile sheet ── */

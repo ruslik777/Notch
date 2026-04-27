@@ -593,7 +593,7 @@ export function openBudgetSheet() {
       <div class="ss-row"><span>Суточный лимит</span><span>${fmt(dailyLimit)}/день</span></div>` : ''}
     </div>
     <div class="ss-footer">
-      <button class="ss-btn" onclick="closeStatSheet();switchTab('profile');setTimeout(()=>switchProfileTab('settings'),80)">Изменить бюджет</button>
+      <button class="ss-btn" onclick="closeStatSheet();openSettingsPage()">Изменить бюджет</button>
     </div>`);
 }
 

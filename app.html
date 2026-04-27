@@ -294,7 +294,7 @@
         <div class="p-hero">
           <div class="p-hero-topbar">
             <div class="p-hero-name" id="p-name">—</div>
-            <button class="p-hero-gear" onclick="switchProfileTab('settings')" aria-label="Настройки">
+            <button class="p-hero-gear" onclick="openSettingsPage()" aria-label="Настройки">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
               </svg>
@@ -327,7 +327,7 @@
             </div>
           </div>
           <div class="p-hero-actions">
-            <button class="p-hero-add-btn" onclick="switchProfileTab('friends')">
+            <button class="p-hero-add-btn" onclick="openFriendsSheet()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
               Добавить друга
             </button>
@@ -337,149 +337,49 @@
           </div>
         </div>
 
-        <div class="profile-tabs" style="font-size:11.5px">
-          <button class="profile-tab active" id="ptab-btn-me" onclick="switchProfileTab('me')">Я</button>
-          <button class="profile-tab" id="ptab-btn-friends" onclick="switchProfileTab('friends')">Друзья</button>
-          <button class="profile-tab" id="ptab-btn-settings" onclick="switchProfileTab('settings')">Настройки</button>
-          <button class="profile-tab" id="ptab-btn-data" onclick="switchProfileTab('data')">Данные</button>
-        </div>
-
-        <!-- TAB: Я -->
-        <div class="profile-tab-pane" id="ptab-me">
-          <div class="p-section">
-            <div class="p-section-lbl">ОБЗОР</div>
-            <div class="p-overview-list">
-              <div class="p-ov-row">
-                <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2c0 0-5 5-5 10a5 5 0 0010 0c0-3-1-5-1-5s0 3-2 4c1-4-2-6-2-9z"/></svg></div>
-                <span class="p-ov-text">Стрик</span>
-                <span class="p-ov-val" id="p-ov-streak">0 дней</span>
-              </div>
-              <div class="p-ov-row">
-                <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
-                <span class="p-ov-text">Рекорд стрика</span>
-                <span class="p-ov-val" id="p-ov-longest">0 дней</span>
-              </div>
-              <div class="p-ov-row">
-                <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <span class="p-ov-text">Дней в приложении</span>
-                <span class="p-ov-val" id="p-ov-days">0</span>
-              </div>
-              <div class="p-ov-row">
-                <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
-                <span class="p-ov-text">Записей всего</span>
-                <span class="p-ov-val" id="p-ov-records">0</span>
-              </div>
+        <!-- Profile content -->
+        <div class="p-section">
+          <div class="p-section-lbl">ОБЗОР</div>
+          <div class="p-overview-list">
+            <div class="p-ov-row">
+              <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2c0 0-5 5-5 10a5 5 0 0010 0c0-3-1-5-1-5s0 3-2 4c1-4-2-6-2-9z"/></svg></div>
+              <span class="p-ov-text">Стрик</span>
+              <span class="p-ov-val" id="p-ov-streak">0 дней</span>
             </div>
-          </div>
-          <div class="p-section">
-            <div class="p-section-lbl" id="p-ov-level-lbl">УРОВЕНЬ 1 · НОВИЧОК</div>
-            <div class="pbar"><div class="pbar-fill" id="p-xp-bar" style="transform:scaleX(0)"></div></div>
-            <div class="p-xp-labels">
-              <span id="p-xp-txt">0 XP</span>
-              <span id="p-xp-next"></span>
+            <div class="p-ov-row">
+              <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+              <span class="p-ov-text">Рекорд стрика</span>
+              <span class="p-ov-val" id="p-ov-longest">0 дней</span>
             </div>
-          </div>
-          <div class="p-section">
-            <div class="p-section-lbl">ДОСТИЖЕНИЯ</div>
-            <div class="p-ach-grid" id="p-achievements"></div>
+            <div class="p-ov-row">
+              <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+              <span class="p-ov-text">Дней в приложении</span>
+              <span class="p-ov-val" id="p-ov-days">0</span>
+            </div>
+            <div class="p-ov-row">
+              <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+              <span class="p-ov-text">Записей всего</span>
+              <span class="p-ov-val" id="p-ov-records">0</span>
+            </div>
+            <div class="p-ov-row p-ov-row-link" onclick="openFriendsSheet()" style="cursor:pointer">
+              <div class="p-ov-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+              <span class="p-ov-text">Друзья</span>
+              <span class="p-ov-val" id="p-friends-count"></span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="color:var(--t3);margin-left:4px"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
           </div>
         </div>
-
-        <!-- TAB: Настройки -->
-        <div class="profile-tab-pane" id="ptab-settings" style="display:none">
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Тема оформления</div></div>
-          <div style="margin:0 16px 20px">
-            <div class="theme-picker" id="theme-picker">
-              <button class="theme-btn" data-t="light"  onclick="setTheme('light')">Светлая</button>
-              <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')">Тёмная</button>
-              <button class="theme-btn" data-t="system" onclick="setTheme('system')">Авто</button>
-            </div>
+        <div class="p-section">
+          <div class="p-section-lbl" id="p-ov-level-lbl">УРОВЕНЬ 1 · НОВИЧОК</div>
+          <div class="pbar"><div class="pbar-fill" id="p-xp-bar" style="transform:scaleX(0)"></div></div>
+          <div class="p-xp-labels">
+            <span id="p-xp-txt">0 XP</span>
+            <span id="p-xp-next"></span>
           </div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Голос напоминаний</div></div>
-          <div class="char-picker-row" id="char-picker-row"></div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Напоминания</div></div>
-          <div class="notif-row">
-            <div>
-              <div class="notif-row-title">Напоминание о стрике</div>
-              <div class="notif-row-sub" id="notif-row-sub">Утро, вечер и последний шанс</div>
-            </div>
-            <button class="notif-toggle-btn off" id="notif-toggle-btn" onclick="toggleNotifications()">Включить</button>
-          </div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Безопасность</div></div>
-          <div class="notif-row" style="margin-bottom:8px">
-            <div>
-              <div class="notif-row-title">PIN-код</div>
-              <div class="notif-row-sub" id="pin-status-sub">Защита при каждом входе</div>
-            </div>
-            <button class="notif-toggle-btn" id="pin-mgmt-btn" onclick="openPinChange()">Установить</button>
-          </div>
-          <div class="notif-row" style="margin-bottom:8px">
-            <div>
-              <div class="notif-row-title" id="bio-profile-label">Face ID / Touch ID</div>
-              <div class="notif-row-sub">Быстрый вход без пароля</div>
-            </div>
-            <button class="notif-toggle-btn" id="bio-profile-btn" onclick="toggleBioFromProfile()">Включить</button>
-          </div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Обязательные траты</div></div>
-          <div id="fixed-exps-list" style="margin:0 16px 12px"></div>
-          <div class="fixed-add-row" id="fixed-add-row">
-            <input class="fixed-name-input" id="fexp-name" type="text" placeholder="Название (Аренда...)" maxlength="30">
-            <input class="fixed-amt-input" id="fexp-amount" type="number" inputmode="decimal" placeholder="Сумма">
-            <button class="fixed-add-btn" onclick="addFixedExp()">+</button>
-          </div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Цели накоплений</div></div>
-          <div id="goals-list" style="margin:0 16px 8px"></div>
-          <div class="goal-new-row">
-            <input class="goal-new-name" id="goal-name" type="text" placeholder="Название цели" maxlength="30">
-            <input class="goal-new-amt" id="goal-target" type="number" inputmode="decimal" placeholder="Сумма">
-            <button class="goal-new-btn" onclick="addSavingsGoal()">+</button>
-          </div>
-
-          <div style="margin:16px 16px 10px"><div class="achiev-title">Валюта</div></div>
-          <div class="currency-grid" id="currency-grid"></div>
-          <div style="height:32px"></div>
         </div>
-
-        <!-- TAB: Друзья -->
-        <div class="profile-tab-pane" id="ptab-friends" style="display:none">
-          <div id="race-wrap"></div>
-
-          <div style="margin:16px 16px 8px"><div class="achiev-title">Активность друзей</div></div>
-          <div id="activity-feed-wrap" style="margin:0 16px 16px">
-            <div class="feed-empty">Загрузка...</div>
-          </div>
-
-          <div class="notch-id-badge">
-            <div>
-              <div style="font-size:10px;color:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Твой Notch ID</div>
-              <div class="notch-id-code" id="my-notch-id">——</div>
-            </div>
-            <button class="notch-id-copy" onclick="copyNotchId()">Скопировать</button>
-          </div>
-          <div style="margin:14px 16px 8px"><div class="achiev-title">Найти друга по ID</div></div>
-          <div class="friend-search-wrap">
-            <input class="friend-search-input" id="friend-search-input" type="text"
-              placeholder="ABC123" maxlength="6"
-              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-            <button class="friend-search-btn" onclick="searchFriend()">Найти</button>
-          </div>
-          <div class="friend-search-result" id="friend-search-result"></div>
-          <div id="friends-list-wrap"></div>
-          <div style="height:32px"></div>
-        </div>
-
-        <!-- TAB: Данные -->
-        <div class="profile-tab-pane" id="ptab-data" style="display:none">
-          <div class="profile-actions">
-            <div class="profile-action" onclick="exportCSV()">Экспорт данных (CSV)</div>
-            <div class="profile-action" onclick="signOut()">Выйти из аккаунта</div>
-            <div class="profile-action danger" onclick="confirmReset()">Сбросить все данные</div>
-          </div>
+        <div class="p-section" style="padding-bottom:32px">
+          <div class="p-section-lbl">ДОСТИЖЕНИЯ</div>
+          <div class="p-ach-grid" id="p-achievements"></div>
         </div>
       </div>
 
@@ -837,6 +737,110 @@
       </div>
       <button class="lock-alt-btn" onclick="pinSetupSkip()">Пропустить</button>
     </div>
+  </div>
+
+  <!-- ── SETTINGS PAGE ── -->
+  <div id="settings-page" class="settings-page">
+    <div class="sp-header">
+      <button class="sp-back" onclick="closeSettingsPage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="sp-title">Настройки</div>
+    </div>
+    <div class="sp-body">
+
+      <div class="sp-section-lbl">Тема оформления</div>
+      <div class="theme-picker" id="theme-picker" style="margin:0 16px 20px">
+        <button class="theme-btn" data-t="light"  onclick="setTheme('light')">Светлая</button>
+        <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')">Тёмная</button>
+        <button class="theme-btn" data-t="system" onclick="setTheme('system')">Авто</button>
+      </div>
+
+      <div class="sp-section-lbl">Голос напоминаний</div>
+      <div class="char-picker-row" id="char-picker-row"></div>
+
+      <div class="sp-section-lbl">Напоминания</div>
+      <div class="notif-row">
+        <div>
+          <div class="notif-row-title">Напоминание о стрике</div>
+          <div class="notif-row-sub" id="notif-row-sub">Утро, вечер и последний шанс</div>
+        </div>
+        <button class="notif-toggle-btn off" id="notif-toggle-btn" onclick="toggleNotifications()">Включить</button>
+      </div>
+
+      <div class="sp-section-lbl">Безопасность</div>
+      <div class="notif-row" style="margin-bottom:8px">
+        <div>
+          <div class="notif-row-title">PIN-код</div>
+          <div class="notif-row-sub" id="pin-status-sub">Защита при каждом входе</div>
+        </div>
+        <button class="notif-toggle-btn" id="pin-mgmt-btn" onclick="openPinChange()">Установить</button>
+      </div>
+      <div class="notif-row" style="margin-bottom:8px">
+        <div>
+          <div class="notif-row-title" id="bio-profile-label">Face ID / Touch ID</div>
+          <div class="notif-row-sub">Быстрый вход без пароля</div>
+        </div>
+        <button class="notif-toggle-btn" id="bio-profile-btn" onclick="toggleBioFromProfile()">Включить</button>
+      </div>
+
+      <div class="sp-section-lbl">Обязательные траты</div>
+      <div id="fixed-exps-list" style="margin:0 16px 12px"></div>
+      <div class="fixed-add-row" id="fixed-add-row">
+        <input class="fixed-name-input" id="fexp-name" type="text" placeholder="Название (Аренда...)" maxlength="30">
+        <input class="fixed-amt-input" id="fexp-amount" type="number" inputmode="decimal" placeholder="Сумма">
+        <button class="fixed-add-btn" onclick="addFixedExp()">+</button>
+      </div>
+
+      <div class="sp-section-lbl">Цели накоплений</div>
+      <div id="goals-list" style="margin:0 16px 8px"></div>
+      <div class="goal-new-row">
+        <input class="goal-new-name" id="goal-name" type="text" placeholder="Название цели" maxlength="30">
+        <input class="goal-new-amt" id="goal-target" type="number" inputmode="decimal" placeholder="Сумма">
+        <button class="goal-new-btn" onclick="addSavingsGoal()">+</button>
+      </div>
+
+      <div class="sp-section-lbl">Валюта</div>
+      <div class="currency-grid" id="currency-grid" style="margin:0 16px 4px"></div>
+
+      <div class="sp-section-lbl">Данные</div>
+      <div class="profile-actions" style="margin:0 16px">
+        <div class="profile-action" onclick="exportCSV()">Экспорт данных (CSV)</div>
+        <div class="profile-action" onclick="signOut()">Выйти из аккаунта</div>
+        <div class="profile-action danger" onclick="confirmReset()">Сбросить все данные</div>
+      </div>
+      <div style="height:calc(env(safe-area-inset-bottom,0px) + 40px)"></div>
+    </div>
+  </div>
+
+  <!-- ── FRIENDS SHEET ── -->
+  <div id="friends-overlay" class="fp-overlay" onclick="closeFriendsSheet()"></div>
+  <div id="friends-sheet" class="fp-sheet">
+    <div class="fp-handle"></div>
+    <div class="fp-sheet-hdr">
+      <div class="fp-sheet-title">Друзья</div>
+      <button class="fp-close" onclick="closeFriendsSheet()">✕</button>
+    </div>
+    <div id="race-wrap"></div>
+    <div style="margin:16px 16px 8px"><div class="achiev-title">Активность друзей</div></div>
+    <div id="activity-feed-wrap" style="margin:0 16px 16px"><div class="feed-empty">Загрузка...</div></div>
+    <div class="notch-id-badge">
+      <div>
+        <div style="font-size:10px;color:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Твой Notch ID</div>
+        <div class="notch-id-code" id="my-notch-id">——</div>
+      </div>
+      <button class="notch-id-copy" onclick="copyNotchId()">Скопировать</button>
+    </div>
+    <div style="margin:14px 16px 8px"><div class="achiev-title">Найти друга по ID</div></div>
+    <div class="friend-search-wrap">
+      <input class="friend-search-input" id="friend-search-input" type="text"
+        placeholder="ABC123" maxlength="6"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <button class="friend-search-btn" onclick="searchFriend()">Найти</button>
+    </div>
+    <div class="friend-search-result" id="friend-search-result"></div>
+    <div id="friends-list-wrap"></div>
+    <div style="height:32px"></div>
   </div>
 
   <!-- ── STAT SHEETS (budget / days / goals) ── -->

@@ -6,7 +6,6 @@ import {
   checkAchievements, getOrInitQuests, generatePersonalQuest,
   _analyticsPeriod, getWeekStart, renderInsights,
 } from './gamification.js';
-import { updateBioToggle } from './notifications.js';
 
 export function renderAvatarEl() {
   const user  = DB.getUser(); if (!user) return;
@@ -379,6 +378,33 @@ export function renderHistory() {
     }).join('');
 }
 
+export function renderCurrencyGrid() {
+  const user = DB.getUser(); if (!user) return;
+  const el = document.getElementById('currency-grid'); if (!el) return;
+  const activeCur  = user.currency     || 'RUB';
+  const baseCurId  = user.baseCurrency || 'RUB';
+  const baseCurDef = CURRENCIES.find(c => c.id === baseCurId) || CURRENCIES[0];
+  el.innerHTML = CURRENCIES.map(c => {
+    let rateStr;
+    if (c.id === baseCurId) {
+      rateStr = 'базовая';
+    } else {
+      const basePerOne = (RATES[baseCurId] || 1) / (RATES[c.id] || 1);
+      if (basePerOne >= 1) {
+        rateStr = `1 ${c.symbol} ≈ ${Math.round(basePerOne)} ${baseCurDef.symbol}`;
+      } else {
+        const onePerBase = (RATES[c.id] || 1) / (RATES[baseCurId] || 1);
+        rateStr = `1 ${baseCurDef.symbol} ≈ ${onePerBase.toFixed(1)} ${c.symbol}`;
+      }
+    }
+    return `<div class="currency-btn ${activeCur === c.id ? 'selected' : ''}" onclick="setCurrency('${c.id}')">
+      <span class="currency-sym">${c.symbol}</span>
+      <span class="currency-name">${c.name}</span>
+      <span class="currency-rate">${rateStr}</span>
+    </div>`;
+  }).join('');
+}
+
 export function renderProfile() {
   const user = DB.getUser();
   if (!user) return;
@@ -416,30 +442,6 @@ export function renderProfile() {
   _set('p-xp-next', lvl.next === Infinity ? 'Макс. уровень' : `ещё ${(lvl.next - xp).toLocaleString('ru')} XP`);
   document.getElementById('p-xp-bar').style.transform = `scaleX(${lvl.progress})`;
 
-  const activeCur  = user.currency     || 'RUB';
-  const baseCurId  = user.baseCurrency || 'RUB';
-  const baseCurDef = CURRENCIES.find(c => c.id === baseCurId) || CURRENCIES[0];
-  document.getElementById('currency-grid').innerHTML = CURRENCIES.map(c => {
-    let rateStr;
-    if (c.id === baseCurId) {
-      rateStr = 'базовая';
-    } else {
-      const basePerOne = (RATES[baseCurId] || 1) / (RATES[c.id] || 1);
-      if (basePerOne >= 1) {
-        rateStr = `1 ${c.symbol} ≈ ${Math.round(basePerOne)} ${baseCurDef.symbol}`;
-      } else {
-        const onePerBase = (RATES[c.id] || 1) / (RATES[baseCurId] || 1);
-        rateStr = `1 ${baseCurDef.symbol} ≈ ${onePerBase.toFixed(1)} ${c.symbol}`;
-      }
-    }
-    return `
-    <div class="currency-btn ${activeCur === c.id ? 'selected' : ''}" onclick="setCurrency('${c.id}')">
-      <span class="currency-sym">${c.symbol}</span>
-      <span class="currency-name">${c.name}</span>
-      <span class="currency-rate">${rateStr}</span>
-    </div>`;
-  }).join('');
-
   document.getElementById('p-achievements').innerHTML = ACHIEVEMENTS.map(a => {
     const done = achieved.includes(a.id);
     return `<div class="p-ach-card ${done ? 'done' : 'locked'}" ${done ? `onclick="shareAchievement('${a.id}')" style="cursor:pointer"` : ''}>
@@ -448,10 +450,6 @@ export function renderProfile() {
       <div class="p-ach-card-desc">${done ? a.desc : 'Заблокировано'}</div>
     </div>`;
   }).join('');
-
-  renderFixedExps();
-  renderSavingsGoals();
-  updateBioToggle();
 }
 
 export function renderAll() {

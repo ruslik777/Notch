@@ -1,5 +1,5 @@
 import { STATE, DB, AUTH, supa, loadState, updateExchangeRates } from './api.js';
-import { renderAll, renderHome, renderProfile, renderFixedExps, renderSavingsGoals } from './render.js';
+import { renderAll, renderHome, renderProfile, renderFixedExps, renderSavingsGoals, renderCurrencyGrid } from './render.js';
 import { renderFriendsTab } from './friends.js';
 import {
   checkStreak, loadLeague, loadFriendsLeague,
@@ -51,6 +51,7 @@ import {
   sendNudge, toggleReaction, loadActivityFeed,
   closeNudgePrompt,
   openFriendProfile, closeFriendProfile,
+  openFriendsSheet, closeFriendsSheet,
 } from './friends.js';
 import { _bioLabel } from './notifications.js';
 
@@ -70,28 +71,27 @@ export function switchTab(tab) {
   document.getElementById('tab-content').scrollTop = 0;
   renderAll();
   if (tab === 'quests')  { loadLeague(); loadFriendsLeague(); }
-  if (tab === 'profile') { updateNotifToggle(); updateBioToggle(); renderCharPicker(); }
 }
 
 export function switchProfileTab(tab) {
-  ['me', 'friends', 'settings', 'data'].forEach(t => {
-    const pane = document.getElementById('ptab-' + t);
-    const btn  = document.getElementById('ptab-btn-' + t);
-    if (!pane || !btn) return;
-    const active = t === tab;
-    pane.style.display = active ? '' : 'none';
-    btn.classList.toggle('active', active);
-  });
-  if (tab === 'settings') {
-    renderCharPicker(); updateNotifToggle(); updateBioToggle(); renderFixedExps(); renderSavingsGoals();
-    const t = localStorage.getItem('notch-theme') || 'system';
-    document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.t === t));
-    const pinBtn = document.getElementById('pin-mgmt-btn');
-    const pinSub = document.getElementById('pin-status-sub');
-    if (pinBtn) pinBtn.textContent = hasPin() ? 'Изменить' : 'Установить';
-    if (pinSub) pinSub.textContent = hasPin() ? 'Установлен — нажми чтобы изменить' : 'Защита при каждом входе';
-  }
-  if (tab === 'friends')  { renderFriendsTab(); }
+  if (tab === 'settings') { openSettingsPage(); return; }
+  if (tab === 'friends')  { openFriendsSheet(); return; }
+}
+
+export function openSettingsPage() {
+  document.getElementById('settings-page').classList.add('open');
+  renderCharPicker(); updateNotifToggle(); updateBioToggle();
+  renderFixedExps(); renderSavingsGoals(); renderCurrencyGrid();
+  const t = localStorage.getItem('notch-theme') || 'system';
+  document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.t === t));
+  const pinBtn = document.getElementById('pin-mgmt-btn');
+  const pinSub = document.getElementById('pin-status-sub');
+  if (pinBtn) pinBtn.textContent = hasPin() ? 'Изменить' : 'Установить';
+  if (pinSub) pinSub.textContent = hasPin() ? 'Установлен — нажми чтобы изменить' : 'Защита при каждом входе';
+}
+
+export function closeSettingsPage() {
+  document.getElementById('settings-page').classList.remove('open');
 }
 
 /* ── Theme ── */
@@ -202,6 +202,8 @@ document.addEventListener('DOMContentLoaded', init);
 Object.assign(window, {
   // navigation
   showScreen, switchTab, switchProfileTab,
+  openSettingsPage, closeSettingsPage,
+  openFriendsSheet, closeFriendsSheet,
 
   // premium
   isPremium, showPremiumScreen, closePremiumScreen,
