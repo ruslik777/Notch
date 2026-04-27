@@ -181,8 +181,8 @@ body {
 .friends-empty { font-size:13px; color:var(--t2); margin:6px 16px 12px; line-height:1.5; }
 
 /* ── AVATAR RING & FRAMES ── */
-.av-ring-wrap { position:relative; width:64px; height:64px; cursor:pointer; display:inline-block; margin-bottom:14px; }
-.av-ring-wrap .profile-avatar { margin-bottom:0; border-radius:50%; position:relative; z-index:1; }
+.av-ring-wrap { position:relative; width:80px; height:80px; cursor:pointer; display:inline-block; margin-bottom:14px; }
+.av-ring-wrap .profile-avatar { margin-bottom:0; border-radius:50%; position:relative; z-index:1; width:100%; height:100%; }
 .av-ring-wrap::before { content:''; position:absolute; inset:-3px; border-radius:50%; z-index:0; animation:ring-spin 3s linear infinite; }
 .av-ring-wrap.frame-none::before { display:none; }
 .av-ring-wrap.frame-gold::before   { background:conic-gradient(#f7d060,#e8a117,#f7d060); }
@@ -890,7 +890,9 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-family: 'Barlow Condensed', sans-serif; font-size: 36px;
   font-weight: 800; color: var(--ac); cursor: pointer;
+  overflow: hidden;
 }
+.profile-avatar svg { width: 58%; height: 58%; display: block; flex-shrink: 0; }
 .p-hero-edit-badge { position:absolute; bottom:0; right:calc(50% - 52px); width:24px; height:24px; background:var(--s2); border:2px solid var(--bg); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--t2); pointer-events:none; }
 .p-hero-meta { text-align:center; font-size:12px; font-weight:600; color:var(--t2); letter-spacing:.3px; margin-bottom:16px; text-transform:uppercase; padding:0 20px; }
 .p-hero-stats { display:flex; align-items:center; justify-content:center; gap:0; border-top:1px solid var(--brd); border-bottom:1px solid var(--brd); margin-bottom:16px; }
