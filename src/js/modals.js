@@ -840,18 +840,18 @@ export async function processReceiptImage(input) {
   try {
     _setReceiptLoadingText('Сжимаю изображение…');
     const base64 = await _compressToBase64(file);
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    _setReceiptLoadingText(`Отправляю (${sizeKB} КБ)…`);
 
     if (base64.length > 1_500_000) {
-      throw new Error('Фото слишком большое — попробуй скриншот чека');
+      throw new Error(`Фото слишком большое (${sizeKB} КБ) — попробуй скриншот чека`);
     }
-
-    _setReceiptLoadingText('Отправляю на анализ…');
     const { data: { session } } = await supa.auth.getSession();
     if (!session) throw new Error('Не авторизован');
 
-    _setReceiptLoadingText('Анализирую чек…');
+    _setReceiptLoadingText(`Анализирую чек (${sizeKB} КБ)…`);
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 35000);
+    const tid = setTimeout(() => controller.abort(), 50000);
     let resp;
     try {
       resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
