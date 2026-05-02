@@ -45,8 +45,8 @@ export default async function handler(req, res) {
   }).catch(() => null);
   if (!authCheck?.ok) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) { res.status(500).json({ error: 'no_api_key' }); return; }
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) { res.status(500).json({ error: 'no_api_key' }); return; }
 
   let buffer;
   try { buffer = await readBody(req); } catch {
@@ -57,28 +57,30 @@ export default async function handler(req, res) {
   const base64 = buffer.toString('base64');
   const mimeType = (req.headers['content-type'] || 'image/jpeg').split(';')[0];
 
-  const geminiResp = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [
-          { text: PROMPT },
-          { inline_data: { mime_type: mimeType, data: base64 } },
-        ]}],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-      }),
-    }
-  ).catch(e => { throw new Error(`Gemini: ${e.message}`); });
+  const aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${groqKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.2-11b-vision-preview',
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: PROMPT },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+      ]}],
+      max_tokens: 2048,
+      temperature: 0.1,
+    }),
+  }).catch(e => { throw new Error(`AI: ${e.message}`); });
 
-  if (!geminiResp.ok) {
-    const detail = await geminiResp.text();
-    res.status(502).json({ error: 'gemini_error', detail }); return;
+  if (!aiResp.ok) {
+    const detail = await aiResp.text();
+    res.status(502).json({ error: 'ai_error', detail }); return;
   }
 
-  const geminiData = await geminiResp.json();
-  const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
+  const aiData = await aiResp.json();
+  const raw = aiData.choices?.[0]?.message?.content ?? '[]';
   const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
   let items;
