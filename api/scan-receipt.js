@@ -1,7 +1,4 @@
-export const config = {
-  api: { bodyParser: false },
-  maxDuration: 60,
-};
+export const config = { runtime: 'edge' };
 
 const PROMPT = `Ты анализируешь скриншот чека или заказа из магазина/доставки.
 Извлеки все товарные позиции с их ценами.
@@ -27,56 +24,67 @@ other — бытовая химия, хозтовары, товары для ж�
 - Если цена не видна — пропусти позицию
 - name — короткое, понятное название`;
 
-async function readBody(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  return Buffer.concat(chunks);
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+function bufToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
 }
 
-export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') { res.status(200).end(); return; }
-  if (req.method !== 'POST') { res.status(405).end(); return; }
+export default async function handler(req) {
+  if (req.method === 'OPTIONS') return new Response('ok');
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) { res.status(401).json({ error: 'Unauthorized' }); return; }
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return json({ error: 'Unauthorized' }, 401);
 
   const authCheck = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
     headers: { Authorization: authHeader, apikey: process.env.SUPABASE_ANON_KEY },
   }).catch(() => null);
-  if (!authCheck?.ok) { res.status(401).json({ error: 'Unauthorized' }); return; }
+  if (!authCheck?.ok) return json({ error: 'Unauthorized' }, 401);
 
   const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) { res.status(500).json({ error: 'no_api_key' }); return; }
+  if (!groqKey) return json({ error: 'no_api_key' }, 500);
 
-  let buffer;
-  try { buffer = await readBody(req); } catch {
-    res.status(400).json({ error: 'Ошибка чтения файла' }); return;
+  let arrayBuffer;
+  try { arrayBuffer = await req.arrayBuffer(); } catch {
+    return json({ error: 'Ошибка чтения файла' }, 400);
   }
-  if (!buffer.length) { res.status(400).json({ error: 'Пустой файл' }); return; }
+  if (!arrayBuffer.byteLength) return json({ error: 'Пустой файл' }, 400);
 
-  const base64 = buffer.toString('base64');
-  const mimeType = (req.headers['content-type'] || 'image/jpeg').split(';')[0];
+  const base64 = bufToBase64(new Uint8Array(arrayBuffer));
+  const mimeType = (req.headers.get('content-type') || 'image/jpeg').split(';')[0];
 
-  const aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${groqKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.2-11b-vision-preview',
-      messages: [{ role: 'user', content: [
-        { type: 'text', text: PROMPT },
-        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-      ]}],
-      max_tokens: 2048,
-      temperature: 0.1,
-    }),
-  }).catch(e => { throw new Error(`AI: ${e.message}`); });
+  let aiResp;
+  try {
+    aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${groqKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.2-11b-vision-preview',
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: PROMPT },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+        ]}],
+        max_tokens: 2048,
+        temperature: 0.1,
+      }),
+    });
+  } catch (e) {
+    return json({ error: 'ai_error', detail: e.message }, 502);
+  }
 
   if (!aiResp.ok) {
     const detail = await aiResp.text();
-    res.status(502).json({ error: 'ai_error', detail }); return;
+    return json({ error: 'ai_error', detail }, 502);
   }
 
   const aiData = await aiResp.json();
@@ -85,9 +93,9 @@ export default async function handler(req, res) {
 
   let items;
   try { items = JSON.parse(cleaned); } catch {
-    res.status(422).json({ error: 'parse_error', raw }); return;
+    return json({ error: 'parse_error', raw }, 422);
   }
 
   const valid = (Array.isArray(items) ? items : []).filter(i => i && i.amount > 0 && i.name);
-  res.status(200).json({ items: valid });
+  return json({ items: valid });
 }
