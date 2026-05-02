@@ -793,8 +793,19 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
+function _fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Ошибка чтения файла'));
+    r.readAsDataURL(file);
+  });
+}
+
 async function _sendFileToGemini(file) {
-  _setReceiptLoadingText(`Отправляю (${Math.round(file.size / 1024)} КБ)…`);
+  _setReceiptLoadingText(`Читаю файл (${Math.round(file.size / 1024)} КБ)…`);
+  const base64 = await _fileToBase64(file);
+
   const { data: { session } } = await supa.auth.getSession();
   if (!session) throw new Error('Не авторизован');
 
@@ -807,14 +818,17 @@ async function _sendFileToGemini(file) {
       method: 'POST',
       signal: controller.signal,
       headers: {
-        'Content-Type': file.type || 'image/jpeg',
+        'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + session.access_token,
       },
-      body: file,
+      body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
     });
   } finally { clearTimeout(tid); }
 
-  const data = await resp.json();
+  let data;
+  try { data = await resp.json(); } catch {
+    throw new Error(`Сервер вернул ошибку (${resp.status})`);
+  }
   if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
   _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
   if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');

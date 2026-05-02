@@ -30,11 +30,6 @@ const json = (data, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-function bufToBase64(bytes) {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response('ok');
@@ -51,14 +46,15 @@ export default async function handler(req) {
   const groqKey = process.env.GROQ_API_KEY;
   if (!groqKey) return json({ error: 'no_api_key' }, 500);
 
-  let arrayBuffer;
-  try { arrayBuffer = await req.arrayBuffer(); } catch {
-    return json({ error: 'Ошибка чтения файла' }, 400);
+  let base64, mimeType;
+  try {
+    const body = await req.json();
+    base64 = body.image;
+    mimeType = body.mimeType || 'image/jpeg';
+  } catch {
+    return json({ error: 'Ошибка чтения тела запроса' }, 400);
   }
-  if (!arrayBuffer.byteLength) return json({ error: 'Пустой файл' }, 400);
-
-  const base64 = bufToBase64(new Uint8Array(arrayBuffer));
-  const mimeType = (req.headers.get('content-type') || 'image/jpeg').split(';')[0];
+  if (!base64) return json({ error: 'Пустой файл' }, 400);
 
   let aiResp;
   try {
