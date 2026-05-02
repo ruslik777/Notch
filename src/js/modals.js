@@ -714,7 +714,7 @@ function _setReceiptState(state, errMsg) {
     body.innerHTML = `
       <div class="rc-loading">
         <div class="rc-spinner"></div>
-        <div class="rc-loading-title">Анализирую чек...</div>
+        <div class="rc-loading-title rc-loading-text">Читаю файл…</div>
         <div class="rc-loading-sub">Gemini AI читает позиции и определяет категории</div>
       </div>`;
   } else if (state === 'error') {
@@ -776,71 +776,63 @@ function _renderReceiptResults() {
   }
 }
 
-function _compressImage(file, maxPx, quality) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-      img.onload = () => {
-        try {
-          let { width, height } = img;
-          if (width > maxPx || height > maxPx) {
-            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-            else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width; canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          if (!dataUrl || dataUrl === 'data:,') { reject(new Error('Canvas пустой')); return; }
-          resolve(dataUrl.split(',')[1]);
-        } catch (err) { reject(err); }
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
+function _setReceiptLoadingText(text) {
+  const el = document.querySelector('.rc-loading-text');
+  if (el) el.textContent = text;
 }
 
 export async function processReceiptImage(input) {
   const file = input?.files?.[0];
   if (!file) return;
   _setReceiptState('loading');
-  const footer = document.getElementById('receipt-footer');
-  if (footer) footer.style.display = 'none';
-
-  const deadline = new Promise((_, rej) =>
-    setTimeout(() => rej(new Error('Превышено время ожидания — попробуй ещё раз')), 30000)
-  );
+  document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
 
   try {
-    await Promise.race([_doReceiptScan(file), deadline]);
+    _setReceiptLoadingText('Читаю файл…');
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+      reader.onload = (e) => {
+        const result = e.target?.result;
+        if (!result || typeof result !== 'string') { reject(new Error('Файл пустой')); return; }
+        const parts = result.split(',');
+        if (parts.length < 2 || !parts[1]) { reject(new Error('Не удалось декодировать файл')); return; }
+        resolve(parts[1]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    _setReceiptLoadingText('Отправляю на анализ…');
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) throw new Error('Не авторизован');
+
+    _setReceiptLoadingText('Анализирую чек…');
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 28000);
+    let resp;
+    try {
+      resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+        },
+        body: JSON.stringify({ image_base64: base64, mime_type: file.type || 'image/jpeg' }),
+      });
+    } finally {
+      clearTimeout(tid);
+    }
+
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
+    _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+    if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+    _setReceiptState('results');
   } catch (err) {
-    _setReceiptState('error', err.message);
+    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
+    _setReceiptState('error', msg);
   }
-}
-
-async function _doReceiptScan(file) {
-  const base64 = await _compressImage(file, 900, 0.82);
-  const { data: { session } } = await supa.auth.getSession();
-  if (!session) throw new Error('Не авторизован');
-
-  const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + session.access_token,
-    },
-    body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
-  });
-
-  const data = await resp.json();
-  if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
-  _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
-  if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
-  _setReceiptState('results');
 }
 
 export function updateReceiptCat(idx, cat) {
