@@ -781,6 +781,74 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
+// Compress via toBlob (async, iOS-safe). Always resolves with base64 string.
+function _compressToBase64(file, maxPx, quality) {
+  return new Promise((resolve, reject) => {
+    if (file.size > 20 * 1024 * 1024) { reject(new Error('Файл слишком большой (>20 МБ)')); return; }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result;
+      if (!dataUrl || typeof dataUrl !== 'string') { reject(new Error('Файл пустой')); return; }
+      const raw = dataUrl.split(',')[1];
+      if (!raw) { reject(new Error('Ошибка декодирования файла')); return; }
+
+      // Already small enough — skip compression
+      if (file.size < 600 * 1024) { resolve(raw); return; }
+
+      const img = new Image();
+      let done = false;
+
+      // Fallback: if img.onload never fires (iOS bug with large images)
+      const imgTimer = setTimeout(() => {
+        if (done) return;
+        done = true;
+        resolve(raw); // send uncompressed
+      }, 7000);
+
+      img.onerror = () => { if (!done) { done = true; clearTimeout(imgTimer); resolve(raw); } };
+      img.onload = () => {
+        if (done) return;
+        clearTimeout(imgTimer);
+        try {
+          let { width, height } = img;
+          if (width <= maxPx && height <= maxPx) { done = true; resolve(raw); return; }
+          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+          else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+          // toBlob is async and doesn't freeze the main thread like toDataURL
+          const blobTimer = setTimeout(() => {
+            if (!done) { done = true; resolve(raw); }
+          }, 10000);
+
+          canvas.toBlob((blob) => {
+            clearTimeout(blobTimer);
+            if (done) return;
+            if (!blob) { done = true; resolve(raw); return; }
+            const r2 = new FileReader();
+            r2.onerror = () => { if (!done) { done = true; resolve(raw); } };
+            r2.onload = (ev) => {
+              if (done) return;
+              done = true;
+              const compressed = ev.target?.result?.split(',')[1];
+              resolve(compressed || raw);
+            };
+            r2.readAsDataURL(blob);
+          }, 'image/jpeg', quality);
+
+        } catch { if (!done) { done = true; resolve(raw); } }
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function processReceiptImage(input) {
   const file = input?.files?.[0];
   if (!file) return;
@@ -788,19 +856,13 @@ export async function processReceiptImage(input) {
   document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
 
   try {
-    _setReceiptLoadingText('Читаю файл…');
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-      reader.onload = (e) => {
-        const result = e.target?.result;
-        if (!result || typeof result !== 'string') { reject(new Error('Файл пустой')); return; }
-        const parts = result.split(',');
-        if (parts.length < 2 || !parts[1]) { reject(new Error('Не удалось декодировать файл')); return; }
-        resolve(parts[1]);
-      };
-      reader.readAsDataURL(file);
-    });
+    _setReceiptLoadingText('Сжимаю изображение…');
+    const base64 = await _compressToBase64(file, 1000, 0.80);
+
+    // Guard against sending huge payloads (> ~4.5 MB base64 ≈ ~3.4 MB image)
+    if (base64.length > 4_500_000) {
+      throw new Error('Фото слишком большое — сделай скриншот чека вместо фото');
+    }
 
     _setReceiptLoadingText('Отправляю на анализ…');
     const { data: { session } } = await supa.auth.getSession();
@@ -808,7 +870,7 @@ export async function processReceiptImage(input) {
 
     _setReceiptLoadingText('Анализирую чек…');
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 28000);
+    const tid = setTimeout(() => controller.abort(), 35000);
     let resp;
     try {
       resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
@@ -818,7 +880,7 @@ export async function processReceiptImage(input) {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + session.access_token,
         },
-        body: JSON.stringify({ image_base64: base64, mime_type: file.type || 'image/jpeg' }),
+        body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
       });
     } finally {
       clearTimeout(tid);
