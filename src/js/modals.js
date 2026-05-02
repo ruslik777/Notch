@@ -807,21 +807,33 @@ export async function processReceiptImage(input) {
   try {
     const base64 = await _compressImage(file, 1200, 0.85);
     const { data: { session } } = await supa.auth.getSession();
-    const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session.access_token,
-      },
-      body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
-    });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    let resp;
+    try {
+      resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+        },
+        body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.detail || data.error || 'Ошибка сервера');
     _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
     if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
     _setReceiptState('results');
   } catch (err) {
-    _setReceiptState('error', err.message);
+    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
+    _setReceiptState('error', msg);
   }
 }
 
