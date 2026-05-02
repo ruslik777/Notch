@@ -798,7 +798,7 @@ export async function processReceiptImage(input) {
         body: JSON.stringify({ image_base64: base64, mime_type: mimeType }),
       });
       const data = await resp.json();
-      if (!resp.ok || data.error) throw new Error(data.error || 'Ошибка сервера');
+      if (!resp.ok || data.error) throw new Error(data.detail || data.error || 'Ошибка сервера');
       _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
       if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
       _setReceiptState('results');

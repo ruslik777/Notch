@@ -1,8 +1,8 @@
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!;
-const SUPA_URL       = Deno.env.get('SUPABASE_URL')!;
-const SUPA_ANON      = Deno.env.get('SUPABASE_ANON_KEY')!;
-
 import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? '';
+const SUPA_URL       = Deno.env.get('SUPABASE_URL') ?? '';
+const SUPA_ANON      = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
 const cors = {
   'Access-Control-Allow-Origin':  '*',
@@ -37,36 +37,52 @@ other — бытовая химия, хозтовары, товары для ж�
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
+  console.log('scan-receipt invoked');
+  console.log('GEMINI_API_KEY present:', GEMINI_API_KEY.length > 0);
+
   const authHeader = req.headers.get('Authorization') ?? '';
   const userClient = createClient(SUPA_URL, SUPA_ANON, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: { user }, error: authErr } = await userClient.auth.getUser();
   if (authErr || !user) {
+    console.log('Auth failed:', authErr?.message);
     return new Response('Unauthorized', { status: 401, headers: cors });
   }
+  console.log('User authenticated:', user.id);
 
   try {
     const { image_base64, mime_type } = await req.json();
     if (!image_base64) return new Response('no image', { status: 400, headers: cors });
+    console.log('Image received, mime_type:', mime_type, 'base64 length:', image_base64.length);
 
-    const geminiResp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { text: PROMPT },
-            { inline_data: { mime_type: mime_type || 'image/jpeg', data: image_base64 } },
-          ]}],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
-        }),
-      }
-    );
+    if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is empty!');
+      return new Response(JSON.stringify({ error: 'no_api_key' }), {
+        status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('Calling Gemini...');
+
+    const geminiResp = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { text: PROMPT },
+          { inline_data: { mime_type: mime_type || 'image/jpeg', data: image_base64 } },
+        ]}],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+      }),
+    });
+
+    console.log('Gemini status:', geminiResp.status);
 
     if (!geminiResp.ok) {
       const detail = await geminiResp.text();
+      console.error('Gemini error:', detail);
       return new Response(JSON.stringify({ error: 'gemini_error', detail }), {
         status: 502, headers: { ...cors, 'Content-Type': 'application/json' },
       });
@@ -74,25 +90,30 @@ Deno.serve(async (req) => {
 
     const geminiData = await geminiResp.json();
     const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';
+    console.log('Gemini raw response:', raw.slice(0, 200));
     const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
     let items;
     try {
       items = JSON.parse(cleaned);
     } catch {
+      console.error('JSON parse error, raw:', cleaned.slice(0, 200));
       return new Response(JSON.stringify({ error: 'parse_error', raw }), {
         status: 422, headers: { ...cors, 'Content-Type': 'application/json' },
       });
     }
 
     const valid = (Array.isArray(items) ? items : [])
-      .filter((i: any) => i && typeof i.amount === 'number' && i.amount > 0 && i.name);
+      .filter((i: any) => i && i.amount > 0 && i.name);
+
+    console.log('Valid items count:', valid.length);
 
     return new Response(JSON.stringify({ items: valid }), {
       headers: { ...cors, 'Content-Type': 'application/json' },
     });
 
   } catch (e: any) {
+    console.error('Unexpected error:', e.message);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { ...cors, 'Content-Type': 'application/json' },
     });
