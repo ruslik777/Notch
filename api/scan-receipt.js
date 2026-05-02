@@ -66,11 +66,14 @@ export default async function handler(req) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
-        messages: [{ role: 'user', content: [
-          { type: 'text', text: PROMPT },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-        ]}],
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        messages: [
+          { role: 'system', content: PROMPT },
+          { role: 'user', content: [
+            { type: 'text', text: 'Прочитай этот чек и верни JSON с товарами.' },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+          ]},
+        ],
         max_tokens: 2048,
         temperature: 0.1,
       }),
