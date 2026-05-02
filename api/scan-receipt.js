@@ -89,11 +89,11 @@ export default async function handler(req) {
 
   // find JSON array anywhere in the response
   const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) return json({ error: 'parse_error', raw }, 422);
+  if (!match) return json({ error: 'parse_error', detail: `raw: ${raw.slice(0, 400)}`, raw }, 422);
 
   let items;
-  try { items = JSON.parse(match[0]); } catch {
-    return json({ error: 'parse_error', raw }, 422);
+  try { items = JSON.parse(match[0]); } catch (e) {
+    return json({ error: 'parse_error', detail: `json err: ${e.message} | raw: ${raw.slice(0, 300)}`, raw }, 422);
   }
 
   const valid = (Array.isArray(items) ? items : []).filter(i => i && i.amount > 0 && i.name);
