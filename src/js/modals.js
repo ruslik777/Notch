@@ -776,6 +776,27 @@ function _renderReceiptResults() {
   }
 }
 
+function _compressImage(file, maxPx, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxPx || height > maxPx) {
+        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+        else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.src = url;
+  });
+}
+
 export async function processReceiptImage(input) {
   const file = input?.files?.[0];
   if (!file) return;
@@ -783,30 +804,25 @@ export async function processReceiptImage(input) {
   const footer = document.getElementById('receipt-footer');
   if (footer) footer.style.display = 'none';
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64   = e.target.result.split(',')[1];
-    const mimeType = file.type || 'image/jpeg';
-    try {
-      const { data: { session } } = await supa.auth.getSession();
-      const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + session.access_token,
-        },
-        body: JSON.stringify({ image_base64: base64, mime_type: mimeType }),
-      });
-      const data = await resp.json();
-      if (!resp.ok || data.error) throw new Error(data.detail || data.error || 'Ошибка сервера');
-      _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
-      if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
-      _setReceiptState('results');
-    } catch (err) {
-      _setReceiptState('error', err.message);
-    }
-  };
-  reader.readAsDataURL(file);
+  try {
+    const base64 = await _compressImage(file, 1200, 0.85);
+    const { data: { session } } = await supa.auth.getSession();
+    const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.detail || data.error || 'Ошибка сервера');
+    _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+    if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+    _setReceiptState('results');
+  } catch (err) {
+    _setReceiptState('error', err.message);
+  }
 }
 
 export function updateReceiptCat(idx, cat) {
