@@ -793,18 +793,9 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
-function _fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('Ошибка чтения файла'));
-    r.readAsDataURL(file);
-  });
-}
-
 async function _sendFileToGemini(file) {
   _setReceiptLoadingText(`Читаю файл (${Math.round(file.size / 1024)} КБ)…`);
-  const base64 = await _fileToBase64(file);
+  const bytes = await file.arrayBuffer();
 
   const { data: { session } } = await supa.auth.getSession();
   if (!session) throw new Error('Не авторизован');
@@ -818,10 +809,10 @@ async function _sendFileToGemini(file) {
       method: 'POST',
       signal: controller.signal,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': file.type || 'image/jpeg',
         'Authorization': 'Bearer ' + session.access_token,
       },
-      body: JSON.stringify({ image: base64, mimeType: file.type || 'image/jpeg' }),
+      body: bytes,
     });
   } finally { clearTimeout(tid); }
 
