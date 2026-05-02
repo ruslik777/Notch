@@ -5,6 +5,7 @@ import { toDay, fmt, getCur } from './format.js';
 import { addXP, incrementStreak, checkQuestCompletion, checkAchievements, getFinancialAge } from './gamification.js';
 import { showPostExpenseNudge } from './friends.js';
 import { renderSavingsGoals, renderFixedExps, renderAll } from './render.js';
+import { SUPABASE_URL } from './config.js';
 
 /* ── Expense modal ── */
 
@@ -668,4 +669,185 @@ export function openGoalsSheet() {
     <div class="ss-footer">
       <button class="ss-btn" onclick="closeStatSheet();addSavingsGoal()">+ Добавить цель</button>
     </div>`);
+}
+
+/* ── Receipt scanner ── */
+
+let _receiptItems = [];
+
+export function openReceiptSheet() {
+  closeModal();
+  document.getElementById('receipt-overlay').classList.add('open');
+  document.getElementById('receipt-sheet').classList.add('open');
+  _setReceiptState('idle');
+}
+
+export function closeReceiptSheet() {
+  document.getElementById('receipt-overlay').classList.remove('open');
+  document.getElementById('receipt-sheet').classList.remove('open');
+  _receiptItems = [];
+}
+
+function _resc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _setReceiptState(state, errMsg) {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+
+  if (state === 'idle') {
+    body.innerHTML = `
+      <div class="rc-idle">
+        <div class="rc-idle-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/><path d="M15 15l-2-2-2 2"/></svg>
+        </div>
+        <div class="rc-idle-title">Загрузи скрин чека</div>
+        <div class="rc-idle-sub">AI распознает товары и расставит категории автоматически</div>
+        <label class="rc-upload-btn" for="receipt-file-input">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Выбрать фото
+        </label>
+        <input type="file" id="receipt-file-input" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      </div>`;
+  } else if (state === 'loading') {
+    body.innerHTML = `
+      <div class="rc-loading">
+        <div class="rc-spinner"></div>
+        <div class="rc-loading-title">Анализирую чек...</div>
+        <div class="rc-loading-sub">Gemini AI читает позиции и определяет категории</div>
+      </div>`;
+  } else if (state === 'error') {
+    body.innerHTML = `
+      <div class="rc-idle">
+        <div class="rc-idle-icon" style="color:var(--red)">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="rc-idle-title">Не удалось распознать</div>
+        <div class="rc-idle-sub">${_resc(errMsg || 'Попробуй другой скрин')}</div>
+        <label class="rc-upload-btn" for="receipt-file-input2">Попробовать снова</label>
+        <input type="file" id="receipt-file-input2" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      </div>`;
+  } else if (state === 'results') {
+    _renderReceiptResults();
+  }
+}
+
+function _catOptions(selected) {
+  return CATS.map(c =>
+    `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.name}</option>`
+  ).join('');
+}
+
+function _renderReceiptResults() {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+  const total = _receiptItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+
+  const rows = _receiptItems.map((item, idx) => `
+    <div class="rc-item" id="rc-item-${idx}">
+      <select class="rc-cat-sel" onchange="updateReceiptCat(${idx},this.value)">
+        ${_catOptions(item.cat)}
+      </select>
+      <div class="rc-item-mid">
+        <div class="rc-item-name">${_resc(item.name)}</div>
+        <div class="rc-item-amt">${fmt(item.amount)}</div>
+      </div>
+      <button class="rc-item-del" onclick="removeReceiptItem(${idx})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div class="rc-results">
+      <div class="rc-count">${_receiptItems.length} позиций · итого ${fmt(total)}</div>
+      <div class="rc-list">${rows}</div>
+    </div>`;
+
+  const footer = document.getElementById('receipt-footer');
+  if (footer) {
+    footer.style.display = '';
+    footer.innerHTML = `
+      <label class="rc-rescan-btn" for="receipt-file-input3">Другой скрин</label>
+      <input type="file" id="receipt-file-input3" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      <button class="rc-save-btn" onclick="saveReceiptItems()">
+        Сохранить ${_receiptItems.length} ${_receiptItems.length === 1 ? 'трату' : _receiptItems.length < 5 ? 'траты' : 'трат'}
+      </button>`;
+  }
+}
+
+export async function processReceiptImage(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+  _setReceiptState('loading');
+  const footer = document.getElementById('receipt-footer');
+  if (footer) footer.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64   = e.target.result.split(',')[1];
+    const mimeType = file.type || 'image/jpeg';
+    try {
+      const { data: { session } } = await supa.auth.getSession();
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token,
+        },
+        body: JSON.stringify({ image_base64: base64, mime_type: mimeType }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || 'Ошибка сервера');
+      _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+      if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+      _setReceiptState('results');
+    } catch (err) {
+      _setReceiptState('error', err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+export function updateReceiptCat(idx, cat) {
+  if (_receiptItems[idx]) _receiptItems[idx].cat = cat;
+}
+
+export function removeReceiptItem(idx) {
+  _receiptItems.splice(idx, 1);
+  if (!_receiptItems.length) {
+    _setReceiptState('idle');
+    const footer = document.getElementById('receipt-footer');
+    if (footer) footer.style.display = 'none';
+  } else {
+    _renderReceiptResults();
+  }
+}
+
+export async function saveReceiptItems() {
+  if (!_receiptItems.length) return;
+  const btn = document.querySelector('.rc-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Сохраняем...'; }
+
+  const today = toDay();
+  for (const item of _receiptItems) {
+    const amt = parseFloat(item.amount);
+    if (!amt || amt <= 0) continue;
+    const exp = {
+      id:     Date.now() + Math.random(),
+      cat:    item.cat || 'other',
+      amount: amt,
+      note:   item.name || '',
+      date:   today,
+    };
+    DB.addExp(exp);
+    addXP(5);
+    await _insertExpense(exp);
+  }
+
+  await checkQuestCompletion();
+  checkAchievements();
+  renderAll();
+  closeReceiptSheet();
+  setTimeout(showPostExpenseNudge, 600);
 }

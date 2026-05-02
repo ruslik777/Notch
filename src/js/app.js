@@ -28,6 +28,8 @@ import {
   shareAchievement, closeShareOverlay,
   openScanner, closeScanner,
   openBudgetSheet, openDaysSheet, openGoalsSheet, closeStatSheet,
+  openReceiptSheet, closeReceiptSheet, processReceiptImage,
+  updateReceiptCat, removeReceiptItem, saveReceiptItems,
 } from './modals.js';
 import {
   submitAuth, signOut, confirmReset, switchAuthTab,
@@ -216,6 +218,10 @@ Object.assign(window, {
 
   // stat sheets
   openBudgetSheet, openDaysSheet, openGoalsSheet, closeStatSheet,
+
+  // receipt scanner
+  openReceiptSheet, closeReceiptSheet, processReceiptImage,
+  updateReceiptCat, removeReceiptItem, saveReceiptItems,
 
   // income modal
   openIncomeModal, closeIncomeModal, handleIncomeOverlayClick,
