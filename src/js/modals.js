@@ -795,7 +795,7 @@ function _compressToBase64(file, maxPx, quality) {
       if (!raw) { reject(new Error('Ошибка декодирования файла')); return; }
 
       // Already small enough — skip compression
-      if (file.size < 600 * 1024) { resolve(raw); return; }
+      if (file.size < 200 * 1024) { resolve(raw); return; }
 
       const img = new Image();
       let done = false;
@@ -857,11 +857,11 @@ export async function processReceiptImage(input) {
 
   try {
     _setReceiptLoadingText('Сжимаю изображение…');
-    const base64 = await _compressToBase64(file, 1000, 0.80);
+    const base64 = await _compressToBase64(file, 600, 0.70);
 
-    // Guard against sending huge payloads (> ~4.5 MB base64 ≈ ~3.4 MB image)
-    if (base64.length > 4_500_000) {
-      throw new Error('Фото слишком большое — сделай скриншот чека вместо фото');
+    // Guard: > 1.5 MB base64 ≈ > 1.1 MB image — still too large after compression
+    if (base64.length > 1_500_000) {
+      throw new Error('Не удалось сжать фото — попробуй сделать скриншот чека');
     }
 
     _setReceiptLoadingText('Отправляю на анализ…');
