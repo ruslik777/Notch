@@ -777,23 +777,30 @@ function _renderReceiptResults() {
 }
 
 function _compressImage(file, maxPx, quality) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { width, height } = img;
-      if (width > maxPx || height > maxPx) {
-        if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-        else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width; canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', quality);
-      resolve(dataUrl.split(',')[1]);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxPx || height > maxPx) {
+            if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
+            else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          if (!dataUrl || dataUrl === 'data:,') { reject(new Error('Canvas пустой')); return; }
+          resolve(dataUrl.split(',')[1]);
+        } catch (err) { reject(err); }
+      };
+      img.src = e.target.result;
     };
-    img.src = url;
+    reader.readAsDataURL(file);
   });
 }
 
@@ -804,37 +811,36 @@ export async function processReceiptImage(input) {
   const footer = document.getElementById('receipt-footer');
   if (footer) footer.style.display = 'none';
 
+  const deadline = new Promise((_, rej) =>
+    setTimeout(() => rej(new Error('Превышено время ожидания — попробуй ещё раз')), 30000)
+  );
+
   try {
-    const base64 = await _compressImage(file, 1200, 0.85);
-    const { data: { session } } = await supa.auth.getSession();
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-
-    let resp;
-    try {
-      resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + session.access_token,
-        },
-        body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    const data = await resp.json();
-    if (!resp.ok || data.error) throw new Error(data.detail || data.error || 'Ошибка сервера');
-    _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
-    if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
-    _setReceiptState('results');
+    await Promise.race([_doReceiptScan(file), deadline]);
   } catch (err) {
-    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
-    _setReceiptState('error', msg);
+    _setReceiptState('error', err.message);
   }
+}
+
+async function _doReceiptScan(file) {
+  const base64 = await _compressImage(file, 900, 0.82);
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) throw new Error('Не авторизован');
+
+  const resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + session.access_token,
+    },
+    body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
+  });
+
+  const data = await resp.json();
+  if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
+  _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+  if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+  _setReceiptState('results');
 }
 
 export function updateReceiptCat(idx, cat) {
