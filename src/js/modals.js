@@ -781,71 +781,53 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
-// Compress via toBlob (async, iOS-safe). Always resolves with base64 string.
-function _compressToBase64(file, maxPx, quality) {
+const _BIC_URL = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
+
+function _loadBIC() {
   return new Promise((resolve, reject) => {
-    if (file.size > 20 * 1024 * 1024) { reject(new Error('Файл слишком большой (>20 МБ)')); return; }
+    if (typeof window.imageCompression === 'function') { resolve(window.imageCompression); return; }
+    if (document.querySelector('script[data-bic]')) {
+      // script already injected, wait for it
+      const wait = setInterval(() => {
+        if (typeof window.imageCompression === 'function') { clearInterval(wait); resolve(window.imageCompression); }
+      }, 50);
+      setTimeout(() => { clearInterval(wait); reject(new Error('Timeout loading BIC')); }, 10000);
+      return;
+    }
+    const s = document.createElement('script');
+    s.setAttribute('data-bic', '1');
+    s.src = _BIC_URL;
+    s.onload = () => resolve(window.imageCompression);
+    s.onerror = () => reject(new Error('Не удалось загрузить библиотеку сжатия'));
+    document.head.appendChild(s);
+  });
+}
 
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Ошибка чтения файла'));
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result;
-      if (!dataUrl || typeof dataUrl !== 'string') { reject(new Error('Файл пустой')); return; }
-      const raw = dataUrl.split(',')[1];
-      if (!raw) { reject(new Error('Ошибка декодирования файла')); return; }
+async function _compressToBase64(file) {
+  // Small files (screenshots etc) — send as-is
+  if (file.size < 300 * 1024) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onerror = () => reject(new Error('Ошибка чтения файла'));
+      r.onload = e => { const raw = e.target?.result?.split(',')[1]; raw ? resolve(raw) : reject(new Error('Файл пустой')); };
+      r.readAsDataURL(file);
+    });
+  }
 
-      // Already small enough — skip compression
-      if (file.size < 200 * 1024) { resolve(raw); return; }
+  const imageCompression = await _loadBIC();
+  const compressed = await imageCompression(file, {
+    maxWidthOrHeight: 700,
+    maxSizeMB: 0.35,
+    useWebWorker: false,
+    fileType: 'image/jpeg',
+    initialQuality: 0.72,
+  });
 
-      const img = new Image();
-      let done = false;
-
-      // Fallback: if img.onload never fires (iOS bug with large images)
-      const imgTimer = setTimeout(() => {
-        if (done) return;
-        done = true;
-        resolve(raw); // send uncompressed
-      }, 7000);
-
-      img.onerror = () => { if (!done) { done = true; clearTimeout(imgTimer); resolve(raw); } };
-      img.onload = () => {
-        if (done) return;
-        clearTimeout(imgTimer);
-        try {
-          let { width, height } = img;
-          if (width <= maxPx && height <= maxPx) { done = true; resolve(raw); return; }
-          if (width > height) { height = Math.round(height * maxPx / width); width = maxPx; }
-          else                { width  = Math.round(width  * maxPx / height); height = maxPx; }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = width; canvas.height = height;
-          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-
-          // toBlob is async and doesn't freeze the main thread like toDataURL
-          const blobTimer = setTimeout(() => {
-            if (!done) { done = true; resolve(raw); }
-          }, 10000);
-
-          canvas.toBlob((blob) => {
-            clearTimeout(blobTimer);
-            if (done) return;
-            if (!blob) { done = true; resolve(raw); return; }
-            const r2 = new FileReader();
-            r2.onerror = () => { if (!done) { done = true; resolve(raw); } };
-            r2.onload = (ev) => {
-              if (done) return;
-              done = true;
-              const compressed = ev.target?.result?.split(',')[1];
-              resolve(compressed || raw);
-            };
-            r2.readAsDataURL(blob);
-          }, 'image/jpeg', quality);
-
-        } catch { if (!done) { done = true; resolve(raw); } }
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error('Ошибка чтения сжатого файла'));
+    r.onload = e => { const raw = e.target?.result?.split(',')[1]; raw ? resolve(raw) : reject(new Error('Ошибка сжатия')); };
+    r.readAsDataURL(compressed);
   });
 }
 
@@ -857,11 +839,10 @@ export async function processReceiptImage(input) {
 
   try {
     _setReceiptLoadingText('Сжимаю изображение…');
-    const base64 = await _compressToBase64(file, 600, 0.70);
+    const base64 = await _compressToBase64(file);
 
-    // Guard: > 1.5 MB base64 ≈ > 1.1 MB image — still too large after compression
     if (base64.length > 1_500_000) {
-      throw new Error('Не удалось сжать фото — попробуй сделать скриншот чека');
+      throw new Error('Фото слишком большое — попробуй скриншот чека');
     }
 
     _setReceiptLoadingText('Отправляю на анализ…');
