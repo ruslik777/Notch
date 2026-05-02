@@ -67,13 +67,10 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: [
-          { role: 'system', content: PROMPT },
-          { role: 'user', content: [
-            { type: 'text', text: 'Прочитай этот чек и верни JSON с товарами.' },
-            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-          ]},
-        ],
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: PROMPT },
+          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
+        ]}],
         max_tokens: 2048,
         temperature: 0.1,
       }),
@@ -88,11 +85,14 @@ export default async function handler(req) {
   }
 
   const aiData = await aiResp.json();
-  const raw = aiData.choices?.[0]?.message?.content ?? '[]';
-  const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  const raw = aiData.choices?.[0]?.message?.content ?? '';
+
+  // find JSON array anywhere in the response
+  const match = raw.match(/\[[\s\S]*\]/);
+  if (!match) return json({ error: 'parse_error', raw }, 422);
 
   let items;
-  try { items = JSON.parse(cleaned); } catch {
+  try { items = JSON.parse(match[0]); } catch {
     return json({ error: 'parse_error', raw }, 422);
   }
 
