@@ -702,12 +702,18 @@ function _setReceiptState(state, errMsg) {
         <div class="rc-idle-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/><path d="M15 15l-2-2-2 2"/></svg>
         </div>
-        <div class="rc-idle-title">Загрузи скрин чека</div>
+        <div class="rc-idle-title">Сканировать чек</div>
         <div class="rc-idle-sub">AI распознает товары и расставит категории автоматически</div>
-        <label class="rc-upload-btn" for="receipt-file-input">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Выбрать фото
-        </label>
+        <div class="rc-idle-btns">
+          <button class="rc-upload-btn rc-cam-btn" onclick="openReceiptCamera()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Камера
+          </button>
+          <label class="rc-upload-btn" for="receipt-file-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Скриншот
+          </label>
+        </div>
         <input type="file" id="receipt-file-input" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
       </div>`;
   } else if (state === 'loading') {
@@ -724,8 +730,14 @@ function _setReceiptState(state, errMsg) {
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
         <div class="rc-idle-title">Не удалось распознать</div>
-        <div class="rc-idle-sub">${_resc(errMsg || 'Попробуй другой скрин')}</div>
-        <label class="rc-upload-btn" for="receipt-file-input2">Попробовать снова</label>
+        <div class="rc-idle-sub">${_resc(errMsg || 'Попробуй ещё раз')}</div>
+        <div class="rc-idle-btns">
+          <button class="rc-upload-btn rc-cam-btn" onclick="openReceiptCamera()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Камера
+          </button>
+          <label class="rc-upload-btn" for="receipt-file-input2">Скриншот</label>
+        </div>
         <input type="file" id="receipt-file-input2" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
       </div>`;
   } else if (state === 'results') {
@@ -781,47 +793,120 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
+async function _sendFileToGemini(file) {
+  _setReceiptLoadingText(`Отправляю (${Math.round(file.size / 1024)} КБ)…`);
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) throw new Error('Не авторизован');
+
+  _setReceiptLoadingText('Анализирую чек…');
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 55000);
+  let resp;
+  try {
+    resp = await fetch('/api/scan-receipt', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': file.type || 'image/jpeg',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: file,
+    });
+  } finally { clearTimeout(tid); }
+
+  const data = await resp.json();
+  if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
+  _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+  if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+  _setReceiptState('results');
+}
+
 export async function processReceiptImage(input) {
   const file = input?.files?.[0];
   if (!file) return;
+  if (file.size > 8 * 1024 * 1024) {
+    _setReceiptState('error', 'Файл слишком большой — используй кнопку Камера');
+    return;
+  }
+  _setReceiptState('loading');
+  document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
+  try {
+    await _sendFileToGemini(file);
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй через камеру' : err.message;
+    _setReceiptState('error', msg);
+  }
+}
+
+let _camStream = null;
+
+export async function openReceiptCamera() {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // No camera API — fall back to file input
+    document.getElementById('receipt-file-input')?.click();
+    return;
+  }
+  try {
+    _camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false,
+    });
+    body.innerHTML = `
+      <div class="rc-camera">
+        <video id="rc-video" autoplay playsinline muted></video>
+        <div class="rc-cam-actions">
+          <button class="rc-rescan-btn" onclick="closeReceiptCamera()">Отмена</button>
+          <button class="rc-capture-btn" onclick="captureReceiptPhoto()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          </button>
+          <div style="width:72px"></div>
+        </div>
+      </div>`;
+    document.getElementById('rc-video').srcObject = _camStream;
+  } catch {
+    _setReceiptState('error', 'Нет доступа к камере — разреши в настройках');
+  }
+}
+
+export function closeReceiptCamera() {
+  _camStream?.getTracks().forEach(t => t.stop());
+  _camStream = null;
+  _setReceiptState('idle');
+}
+
+export function captureReceiptPhoto() {
+  const video = document.getElementById('rc-video');
+  if (!video) return;
+
+  const MAX = 900;
+  let w = video.videoWidth || 640;
+  let h = video.videoHeight || 480;
+  if (w > MAX || h > MAX) {
+    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+    else        { w = Math.round(w * MAX / h); h = MAX; }
+  }
+
+  _camStream?.getTracks().forEach(t => t.stop());
+  _camStream = null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+
   _setReceiptState('loading');
   document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
 
-  try {
-    const sizeKB = Math.round(file.size / 1024);
-    if (file.size > 8 * 1024 * 1024) {
-      throw new Error('Файл слишком большой (> 8 МБ) — попробуй скриншот чека');
-    }
-
-    _setReceiptLoadingText(`Отправляю (${sizeKB} КБ)…`);
-    const { data: { session } } = await supa.auth.getSession();
-    if (!session) throw new Error('Не авторизован');
-
-    _setReceiptLoadingText('Анализирую чек…');
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 55000);
-    let resp;
+  canvas.toBlob(async (blob) => {
+    if (!blob) { _setReceiptState('error', 'Не удалось сделать снимок'); return; }
     try {
-      resp = await fetch('/api/scan-receipt', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': file.type || 'image/jpeg',
-          'Authorization': 'Bearer ' + session.access_token,
-        },
-        body: file,
-      });
-    } finally { clearTimeout(tid); }
-
-    const data = await resp.json();
-    if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
-    _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
-    if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
-    _setReceiptState('results');
-  } catch (err) {
-    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
-    _setReceiptState('error', msg);
-  }
+      await _sendFileToGemini(new File([blob], 'receipt.jpg', { type: 'image/jpeg' }));
+    } catch (err) {
+      const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
+      _setReceiptState('error', msg);
+    }
+  }, 'image/jpeg', 0.82);
 }
 
 export function updateReceiptCat(idx, cat) {

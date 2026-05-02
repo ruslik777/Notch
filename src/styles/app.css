@@ -1558,6 +1558,13 @@ html[data-theme="dark"] .ring-track { stroke: rgba(255,255,255,.06); }
 .rc-save-btn:disabled { opacity: .5; }
 .rc-rescan-btn { padding: 10px 14px; background: var(--s1); border: 1.5px solid var(--brd); border-radius: 12px; font-size: 13px; font-weight: 600; color: var(--t2); cursor: pointer; white-space: nowrap; display: flex; align-items: center; }
 .rc-idle { display: flex; flex-direction: column; align-items: center; padding: 48px 24px 32px; gap: 12px; text-align: center; }
+.rc-idle-btns { display: flex; gap: 10px; margin-top: 4px; }
+.rc-cam-btn { background: var(--ac) !important; color: #fff !important; border-color: transparent !important; }
+.rc-camera { display: flex; flex-direction: column; height: 100%; min-height: 320px; }
+.rc-camera video { width: 100%; flex: 1; min-height: 0; object-fit: cover; border-radius: 14px; background: #000; }
+.rc-cam-actions { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 8px; }
+.rc-capture-btn { width: 64px; height: 64px; border-radius: 50%; background: #fff; border: 4px solid var(--ac); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ac); transition: transform 0.15s; }
+.rc-capture-btn:active { transform: scale(0.92); }
 .rc-idle-icon { color: var(--t3); }
 .rc-idle-title { font-size: 17px; font-weight: 800; color: var(--text); }
 .rc-idle-sub { font-size: 13px; color: var(--t2); line-height: 1.5; max-width: 260px; }

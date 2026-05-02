@@ -29,6 +29,7 @@ import {
   openScanner, closeScanner,
   openBudgetSheet, openDaysSheet, openGoalsSheet, closeStatSheet,
   openReceiptSheet, closeReceiptSheet, processReceiptImage,
+  openReceiptCamera, closeReceiptCamera, captureReceiptPhoto,
   updateReceiptCat, removeReceiptItem, saveReceiptItems,
 } from './modals.js';
 import {
@@ -221,6 +222,7 @@ Object.assign(window, {
 
   // receipt scanner
   openReceiptSheet, closeReceiptSheet, processReceiptImage,
+  openReceiptCamera, closeReceiptCamera, captureReceiptPhoto,
   updateReceiptCat, removeReceiptItem, saveReceiptItems,
 
   // income modal
