@@ -781,56 +781,6 @@ function _setReceiptLoadingText(text) {
   if (el) el.textContent = text;
 }
 
-const _BIC_URL = 'https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js';
-
-function _loadBIC() {
-  return new Promise((resolve, reject) => {
-    if (typeof window.imageCompression === 'function') { resolve(window.imageCompression); return; }
-    if (document.querySelector('script[data-bic]')) {
-      // script already injected, wait for it
-      const wait = setInterval(() => {
-        if (typeof window.imageCompression === 'function') { clearInterval(wait); resolve(window.imageCompression); }
-      }, 50);
-      setTimeout(() => { clearInterval(wait); reject(new Error('Timeout loading BIC')); }, 10000);
-      return;
-    }
-    const s = document.createElement('script');
-    s.setAttribute('data-bic', '1');
-    s.src = _BIC_URL;
-    s.onload = () => resolve(window.imageCompression);
-    s.onerror = () => reject(new Error('Не удалось загрузить библиотеку сжатия'));
-    document.head.appendChild(s);
-  });
-}
-
-async function _compressToBase64(file) {
-  // Small files (screenshots etc) — send as-is
-  if (file.size < 300 * 1024) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onerror = () => reject(new Error('Ошибка чтения файла'));
-      r.onload = e => { const raw = e.target?.result?.split(',')[1]; raw ? resolve(raw) : reject(new Error('Файл пустой')); };
-      r.readAsDataURL(file);
-    });
-  }
-
-  const imageCompression = await _loadBIC();
-  const compressed = await imageCompression(file, {
-    maxWidthOrHeight: 700,
-    maxSizeMB: 0.35,
-    useWebWorker: false,
-    fileType: 'image/jpeg',
-    initialQuality: 0.72,
-  });
-
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onerror = () => reject(new Error('Ошибка чтения сжатого файла'));
-    r.onload = e => { const raw = e.target?.result?.split(',')[1]; raw ? resolve(raw) : reject(new Error('Ошибка сжатия')); };
-    r.readAsDataURL(compressed);
-  });
-}
-
 export async function processReceiptImage(input) {
   const file = input?.files?.[0];
   if (!file) return;
@@ -838,34 +788,30 @@ export async function processReceiptImage(input) {
   document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
 
   try {
-    _setReceiptLoadingText('Сжимаю изображение…');
-    const base64 = await _compressToBase64(file);
-    const sizeKB = Math.round(base64.length * 0.75 / 1024);
-    _setReceiptLoadingText(`Отправляю (${sizeKB} КБ)…`);
-
-    if (base64.length > 1_500_000) {
-      throw new Error(`Фото слишком большое (${sizeKB} КБ) — попробуй скриншот чека`);
+    const sizeKB = Math.round(file.size / 1024);
+    if (file.size > 8 * 1024 * 1024) {
+      throw new Error('Файл слишком большой (> 8 МБ) — попробуй скриншот чека');
     }
+
+    _setReceiptLoadingText(`Отправляю (${sizeKB} КБ)…`);
     const { data: { session } } = await supa.auth.getSession();
     if (!session) throw new Error('Не авторизован');
 
-    _setReceiptLoadingText(`Анализирую чек (${sizeKB} КБ)…`);
+    _setReceiptLoadingText('Анализирую чек…');
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 50000);
+    const tid = setTimeout(() => controller.abort(), 55000);
     let resp;
     try {
-      resp = await fetch(SUPABASE_URL + '/functions/v1/scan-receipt', {
+      resp = await fetch('/api/scan-receipt', {
         method: 'POST',
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': file.type || 'image/jpeg',
           'Authorization': 'Bearer ' + session.access_token,
         },
-        body: JSON.stringify({ image_base64: base64, mime_type: 'image/jpeg' }),
+        body: file,
       });
-    } finally {
-      clearTimeout(tid);
-    }
+    } finally { clearTimeout(tid); }
 
     const data = await resp.json();
     if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
