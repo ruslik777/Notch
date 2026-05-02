@@ -65,7 +65,7 @@ export default async function handler(req) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
+        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
         messages: [{ role: 'user', content: [
           { type: 'text', text: PROMPT },
           { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
