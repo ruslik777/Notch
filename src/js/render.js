@@ -87,6 +87,44 @@ export function renderFixedExps() {
     </div>`).join('');
 }
 
+function _renderSparkline(exps) {
+  const svg = document.getElementById('h-sparkline');
+  if (!svg) return;
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    days.push(exps.filter(e => e.date === ds).reduce((s, e) => s + e.amount, 0));
+  }
+
+  const max = Math.max(...days, 1);
+  const W = 280, H = 40, PX = 6, PY = 5;
+  const pts = days.map((v, i) => ({
+    x: (i / 6) * (W - PX * 2) + PX,
+    y: H - PY - ((v / max) * (H - PY * 2)),
+  }));
+
+  let line = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cx = (pts[i - 1].x + pts[i].x) / 2;
+    line += ` C ${cx} ${pts[i-1].y} ${cx} ${pts[i].y} ${pts[i].x} ${pts[i].y}`;
+  }
+  const area = `${line} L ${pts[6].x} ${H + 2} L ${pts[0].x} ${H + 2} Z`;
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const strokeC = isDark ? 'rgba(255,107,0,0.85)' : 'rgba(229,96,26,0.6)';
+  const fillC   = isDark ? 'rgba(255,107,0,0.18)'  : 'rgba(229,96,26,0.08)';
+  const glow    = isDark
+    ? `<filter id="sg"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+    : '';
+
+  svg.innerHTML = `<defs>${glow}</defs>
+    <path d="${area}" fill="${fillC}"/>
+    <path d="${line}" fill="none" stroke="${strokeC}" stroke-width="1.5" stroke-linecap="round" ${isDark ? 'filter="url(#sg)"' : ''}/>`;
+}
+
 export function renderHome() {
   const user = DB.getUser();
   if (!user) return;
@@ -187,6 +225,8 @@ export function renderHome() {
     leftEl.textContent = '—'; leftEl.className = 'today-amt positive';
     subEl.textContent  = 'осталось на день';
   }
+
+  _renderSparkline(exps);
 
   const quests = getOrInitQuests();
   const shownQ = quests.daily.slice(0, 2);

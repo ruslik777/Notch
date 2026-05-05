@@ -13,7 +13,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23E5601A'/><text x='16' y='23' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='20' font-weight='900' fill='%23fff'>N</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
   <script>
     (function(){
       var t=localStorage.getItem('notch-theme')||'system';
@@ -188,6 +188,7 @@
               <button class="add-income-btn" onclick="openIncomeModal()">+ Доход</button>
             </div>
             <div class="balance-amount" id="h-bal-amount">0 ₽</div>
+            <svg id="h-sparkline" class="balance-sparkline" viewBox="0 0 280 40" preserveAspectRatio="none"></svg>
             <div class="balance-row">
               <div>
                 <div class="balance-stat-val inc" id="h-bal-inc">0 ₽</div>
