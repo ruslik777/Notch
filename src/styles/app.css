@@ -188,6 +188,24 @@ body {
 }
 .snooze-date-chip:active { background: var(--a10); color: var(--ac); border-color: var(--ac); }
 
+/* ── Streak danger banner ── */
+#streak-danger-slot { transition: opacity .25s, transform .25s; }
+.streak-danger-banner {
+  margin: 0 16px 12px; padding: 12px 14px;
+  border-radius: 14px; display: flex; align-items: center; gap: 10px;
+  background: rgba(255,107,0,.08); border: 1px solid rgba(255,107,0,.22);
+}
+.streak-danger-icon { flex-shrink: 0; color: var(--ac); display: flex; }
+.streak-danger-icon svg { width: 18px; height: 18px; }
+.streak-danger-body { flex: 1; min-width: 0; }
+.streak-danger-title { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.streak-danger-sub   { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.streak-danger-dismiss {
+  font-size: 17px; line-height: 1; color: var(--t3);
+  background: transparent; border: none; cursor: pointer; padding: 4px 2px;
+  -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+
 #notif-prompt-slot { transition: opacity .25s, transform .25s; }
 .notif-prompt {
   margin: 0 16px 12px; padding: 12px 14px;

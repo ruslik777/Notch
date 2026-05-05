@@ -163,6 +163,44 @@ function _renderIncomeBanner() {
   }
 }
 
+function _renderStreakDanger(exps) {
+  const slot = document.getElementById('streak-danger-slot'); if (!slot) return;
+  const user = DB.getUser(); if (!user || !user.streak) { slot.innerHTML = ''; return; }
+
+  const hour = new Date().getHours();
+  if (hour < 19) { slot.innerHTML = ''; return; }
+
+  const todayExps = exps.filter(e => e.date === toDay());
+  if (todayExps.length > 0) { slot.innerHTML = ''; return; }
+
+  // Already dismissed today
+  const dismissed = localStorage.getItem('streak_danger_dismissed');
+  if (dismissed === toDay()) { slot.innerHTML = ''; return; }
+
+  slot.innerHTML = `
+    <div class="streak-danger-banner" id="streak-danger-banner">
+      <div class="streak-danger-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div class="streak-danger-body">
+        <div class="streak-danger-title">Стрик под угрозой</div>
+        <div class="streak-danger-sub">${user.streak} дн. серия — запиши хоть одну трату сегодня</div>
+      </div>
+      <button class="streak-danger-dismiss" onclick="dismissStreakDanger()">&#xd7;</button>
+    </div>`;
+
+  const banner = document.getElementById('streak-danger-banner');
+  if (banner) {
+    banner.style.opacity   = '0';
+    banner.style.transform = 'translateY(-6px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      banner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      banner.style.opacity    = '1';
+      banner.style.transform  = 'translateY(0)';
+    }));
+  }
+}
+
 function _renderSparkline(exps) {
   const svg = document.getElementById('h-sparkline');
   if (!svg) return;
@@ -413,6 +451,7 @@ export function renderHome() {
   renderInsights();
   if (typeof window.renderNotifBanner === 'function') window.renderNotifBanner();
   _renderIncomeBanner();
+  _renderStreakDanger(exps);
 }
 
 export function renderQuests() {

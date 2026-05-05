@@ -247,6 +247,20 @@ export async function saveIncomeBanner() {
   }
 }
 
+export function dismissStreakDanger() {
+  localStorage.setItem('streak_danger_dismissed', toDay());
+  const banner = document.getElementById('streak-danger-banner');
+  if (banner) {
+    banner.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    banner.style.opacity    = '0';
+    banner.style.transform  = 'translateY(-6px)';
+    setTimeout(() => {
+      const slot = document.getElementById('streak-danger-slot');
+      if (slot) slot.innerHTML = '';
+    }, 270);
+  }
+}
+
 export function snoozeIncomeBanner(day) {
   const now  = new Date();
   const date = new Date(now.getFullYear(), now.getMonth(), day);
