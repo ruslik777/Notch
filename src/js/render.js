@@ -112,17 +112,48 @@ function _renderSparkline(exps) {
     line += ` C ${cx} ${pts[i-1].y} ${cx} ${pts[i].y} ${pts[i].x} ${pts[i].y}`;
   }
   const area = `${line} L ${pts[6].x} ${H + 2} L ${pts[0].x} ${H + 2} Z`;
+  const tail = pts[6];
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const strokeC = isDark ? 'rgba(255,107,0,0.85)' : 'rgba(229,96,26,0.6)';
-  const fillC   = isDark ? 'rgba(255,107,0,0.18)'  : 'rgba(229,96,26,0.08)';
+  const strokeC = isDark ? 'rgba(255,107,0,0.9)' : 'rgba(229,96,26,0.6)';
+  const fillC   = isDark ? 'rgba(255,107,0,0.15)' : 'rgba(229,96,26,0.07)';
+  const dotC    = isDark ? '#FF6B00' : '#E5601A';
   const glow    = isDark
-    ? `<filter id="sg"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
+    ? `<filter id="sg"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+       <filter id="dg"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`
     : '';
 
   svg.innerHTML = `<defs>${glow}</defs>
-    <path d="${area}" fill="${fillC}"/>
-    <path d="${line}" fill="none" stroke="${strokeC}" stroke-width="1.5" stroke-linecap="round" ${isDark ? 'filter="url(#sg)"' : ''}/>`;
+    <path class="spark-area" d="${area}" fill="${fillC}"/>
+    <path id="spark-line" d="${line}" fill="none" stroke="${strokeC}" stroke-width="1.5" stroke-linecap="round" ${isDark ? 'filter="url(#sg)"' : ''}/>
+    <circle class="spark-dot" cx="${tail.x}" cy="${tail.y}" r="3" fill="${dotC}" ${isDark ? 'filter="url(#dg)"' : ''}/>`;
+
+  // Animate line drawing from left to right
+  const pathEl = svg.querySelector('#spark-line');
+  if (pathEl) {
+    const len = pathEl.getTotalLength();
+    pathEl.style.strokeDasharray  = len;
+    pathEl.style.strokeDashoffset = len;
+    pathEl.style.transition = 'none';
+    // Double rAF — let browser paint the initial hidden state first
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      pathEl.style.transition = 'stroke-dashoffset 0.9s cubic-bezier(0.23,1,0.32,1)';
+      pathEl.style.strokeDashoffset = '0';
+    }));
+  }
+
+  // Fade in area and dot
+  const areaEl = svg.querySelector('.spark-area');
+  const dotEl  = svg.querySelector('.spark-dot');
+  [areaEl, dotEl].forEach(el => {
+    if (!el) return;
+    el.style.opacity = '0';
+    el.style.transition = 'none';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.transition = 'opacity 1s ease';
+      el.style.opacity = '1';
+    }));
+  });
 }
 
 export function renderHome() {

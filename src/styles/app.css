@@ -1282,6 +1282,28 @@ html[data-theme="dark"] .xp-ring-name {
   color: #FF6B00;
   text-shadow: 0 0 14px rgba(255,107,0,.55);
 }
+html[data-theme="dark"] .xp-ring-pts {
+  color: rgba(255,107,0,.75);
+  text-shadow: 0 0 10px rgba(255,107,0,.5);
+  font-weight: 800;
+}
+html[data-theme="dark"] .xp-ring-level {
+  color: rgba(255,107,0,.45);
+  letter-spacing: .12em;
+}
+html[data-theme="dark"] .xp-ring-next {
+  color: rgba(255,107,0,.35);
+}
+
+/* Sparkline living dot */
+.spark-dot {
+  transform-origin: center;
+  animation: spark-pulse 2s ease-in-out infinite;
+}
+@keyframes spark-pulse {
+  0%, 100% { opacity: 1;   r: 3; }
+  50%       { opacity: .55; r: 4; }
+}
 
 /* Cards — gradient surfaces */
 html[data-theme="dark"] .hcard {
