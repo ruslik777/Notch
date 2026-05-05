@@ -69,14 +69,12 @@ Deno.serve(async () => {
     const tz       = sub.timezone || 'Europe/Moscow';
     const today    = localDateStr(now, tz);
     const { h, m } = localHourMin(now, tz);
-    const slot     = whichSlot(h, m);
+    const slot = whichSlot(h, m);
     if (!slot) continue;
 
-    // Skip if already sent this slot today
     const sentKey = `sent_${slot}` as keyof typeof sub;
     if (sub[sentKey] === today) continue;
 
-    // Skip if user already logged today
     const last = lastEntry.get(sub.user_id);
     if (last && last >= today) continue;
 
