@@ -250,6 +250,20 @@ export async function saveIncomeBanner() {
   }
 }
 
+export function dismissMonthSummary() {
+  localStorage.setItem('month_summary_dismissed', toDay().substring(0, 7));
+  const card = document.getElementById('month-summary');
+  if (card) {
+    card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    card.style.opacity    = '0';
+    card.style.transform  = 'translateY(-6px)';
+    setTimeout(() => {
+      const slot = document.getElementById('month-summary-slot');
+      if (slot) slot.innerHTML = '';
+    }, 270);
+  }
+}
+
 export function dismissStreakDanger() {
   localStorage.setItem('streak_danger_dismissed', toDay());
   const banner = document.getElementById('streak-danger-banner');

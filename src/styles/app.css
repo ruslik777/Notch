@@ -129,6 +129,30 @@ body {
 .budget-alert svg    { flex-shrink: 0; width: 16px; height: 16px; }
 
 /* ── NOTIFICATION PROMPT BANNER ── */
+/* ── Month summary card ── */
+#month-summary-slot { transition: opacity .25s, transform .25s; }
+.month-summary {
+  margin: 0 16px 12px; padding: 14px 16px;
+  border-radius: 16px; background: var(--s1);
+  border: 1px solid var(--brd);
+}
+.month-summary-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.month-summary-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.month-summary-close {
+  font-size: 17px; line-height: 1; color: var(--t3);
+  background: transparent; border: none; cursor: pointer; padding: 2px 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.month-summary-stats {
+  display: flex; gap: 0; justify-content: space-around;
+}
+.month-summary-stat { text-align: center; }
+.month-summary-val { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; }
+.month-summary-lbl { font-size: 11px; color: var(--t2); margin-top: 2px; }
+
 /* ── Income banner ── */
 #income-banner-slot { transition: opacity .25s, transform .25s; }
 .income-banner {

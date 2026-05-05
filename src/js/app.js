@@ -20,7 +20,7 @@ import {
   selectIncomeType, validateIncomeForm, saveIncome,
   saveIncomeBanner, snoozeIncomeBanner,
   openIncomeSheet, deleteIncome,
-  dismissStreakDanger,
+  dismissMonthSummary, dismissStreakDanger,
   openSettings, closeSettings, handleSettingsOverlay, saveSettings,
   setCurrency,
   addSavingsGoal, removeSavingsGoal, depositSavingsGoal,
@@ -240,7 +240,7 @@ Object.assign(window, {
   selectIncomeType, validateIncomeForm, saveIncome,
   saveIncomeBanner, snoozeIncomeBanner,
   openIncomeSheet, deleteIncome,
-  dismissStreakDanger,
+  dismissMonthSummary, dismissStreakDanger,
 
   // settings
   openSettings, closeSettings, handleSettingsOverlay, saveSettings,

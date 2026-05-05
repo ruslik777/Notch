@@ -91,6 +91,74 @@ export function renderFixedExps() {
     </div>`).join('');
 }
 
+function _renderMonthSummary() {
+  const slot = document.getElementById('month-summary-slot'); if (!slot) return;
+
+  const now = new Date();
+  // Only show in first 5 days of month
+  if (now.getDate() > 5) { slot.innerHTML = ''; return; }
+
+  // Dismissed this month?
+  const curMonth = toDay().substring(0, 7);
+  if (localStorage.getItem('month_summary_dismissed') === curMonth) { slot.innerHTML = ''; return; }
+
+  // Calc previous month stats
+  const pm      = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const pmEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
+  const pmStart = pm.toISOString().split('T')[0];
+  const pmEndS  = pmEnd.toISOString().split('T')[0];
+  const pmName  = pm.toLocaleDateString('ru-RU', { month: 'long' });
+
+  const exps    = DB.getExps();
+  const incomes = DB.getIncomes();
+  const user    = DB.getUser();
+
+  const pmExps    = exps.filter(e => e.date >= pmStart && e.date <= pmEndS);
+  const pmIncs    = incomes.filter(i => i.date >= pmStart && i.date <= pmEndS);
+  const pmSpent   = pmExps.reduce((s, e) => s + e.amount, 0);
+  const pmIncome  = pmIncs.reduce((s, i) => s + i.amount, 0) || (user?.monthlyIncome || 0);
+  const pmFixed   = (user?.fixedExps || []).reduce((s, e) => s + e.amount, 0);
+  const pmSaved   = Math.max(0, pmIncome - pmSpent - pmFixed);
+
+  // Don't show if no data for previous month
+  if (pmSpent === 0 && pmIncome === 0) { slot.innerHTML = ''; return; }
+
+  const savedColor = pmSaved > 0 ? 'var(--green)' : 'var(--t2)';
+
+  slot.innerHTML = `
+    <div class="month-summary" id="month-summary">
+      <div class="month-summary-hdr">
+        <span class="month-summary-title">Итог — ${pmName}</span>
+        <button class="month-summary-close" onclick="dismissMonthSummary()">&#xd7;</button>
+      </div>
+      <div class="month-summary-stats">
+        <div class="month-summary-stat">
+          <div class="month-summary-val" style="color:var(--red)">−${fmt(pmSpent)}</div>
+          <div class="month-summary-lbl">потрачено</div>
+        </div>
+        ${pmIncome > 0 ? `<div class="month-summary-stat">
+          <div class="month-summary-val" style="color:var(--gold)">${fmt(pmIncome)}</div>
+          <div class="month-summary-lbl">получено</div>
+        </div>` : ''}
+        <div class="month-summary-stat">
+          <div class="month-summary-val" style="color:${savedColor}">${pmSaved > 0 ? '+' + fmt(pmSaved) : '—'}</div>
+          <div class="month-summary-lbl">сэкономлено</div>
+        </div>
+      </div>
+    </div>`;
+
+  const card = document.getElementById('month-summary');
+  if (card) {
+    card.style.opacity   = '0';
+    card.style.transform = 'translateY(-6px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      card.style.opacity    = '1';
+      card.style.transform  = 'translateY(0)';
+    }));
+  }
+}
+
 function _shouldShowIncomeBanner() {
   const user = DB.getUser(); if (!user) return false;
   const now    = new Date();
@@ -462,6 +530,7 @@ export function renderHome() {
   }
   renderInsights();
   if (typeof window.renderNotifBanner === 'function') window.renderNotifBanner();
+  _renderMonthSummary();
   _renderIncomeBanner();
   _renderStreakDanger(exps);
 }
