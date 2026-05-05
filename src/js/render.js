@@ -87,6 +87,78 @@ export function renderFixedExps() {
     </div>`).join('');
 }
 
+function _shouldShowIncomeBanner() {
+  const user = DB.getUser(); if (!user) return false;
+  const now    = new Date();
+  const mStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const today  = toDay();
+
+  const incomes = DB.getIncomes();
+  const monthIncome = incomes.filter(i => i.date >= mStart).reduce((s, i) => s + i.amount, 0);
+  if (monthIncome > 0) return false;
+
+  const snoozedUntil = localStorage.getItem('income_banner_snooze');
+  if (snoozedUntil) {
+    const snoozeMonth = snoozedUntil.substring(0, 7);
+    const curMonth    = today.substring(0, 7);
+    if (snoozeMonth < curMonth) {
+      // Snooze from a past month — clear it, fall through to day check
+      localStorage.removeItem('income_banner_snooze');
+    } else {
+      // Snooze in current month — wait until that date
+      return today >= snoozedUntil;
+    }
+  }
+
+  // No active snooze — show in first 5 days of month
+  return now.getDate() <= 5;
+}
+
+function _renderIncomeBanner() {
+  const slot = document.getElementById('income-banner-slot'); if (!slot) return;
+  if (!_shouldShowIncomeBanner()) { slot.innerHTML = ''; return; }
+
+  const now      = new Date();
+  const lastDay  = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const todayDay = now.getDate();
+  const sym      = getCur().sym;
+
+  const snoozeDates = [5, 10, 15, 20, 25].filter(d => d > todayDay);
+  if (todayDay < lastDay) snoozeDates.push(lastDay);
+
+  slot.innerHTML = `
+    <div class="income-banner" id="income-banner">
+      <div class="income-banner-hdr">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <span class="income-banner-title">Новый месяц — запиши доход</span>
+      </div>
+      <div class="income-banner-row">
+        <input class="income-banner-input" id="ib-amount" type="number" inputmode="decimal" placeholder="0" min="1">
+        <span class="income-banner-sym">${sym}</span>
+        <button class="income-banner-save-btn" id="ib-save-btn" onclick="saveIncomeBanner()" disabled>Записать</button>
+      </div>
+      ${snoozeDates.length > 0 ? `<div class="income-banner-snooze">
+        <span class="income-banner-snooze-lbl">Отложить до:</span>
+        ${snoozeDates.map(d => `<button class="snooze-date-chip" onclick="snoozeIncomeBanner(${d})">${d}-го</button>`).join('')}
+      </div>` : ''}
+    </div>`;
+
+  const input = document.getElementById('ib-amount');
+  const btn   = document.getElementById('ib-save-btn');
+  if (input && btn) input.addEventListener('input', () => { btn.disabled = !parseFloat(input.value); });
+
+  const banner = document.getElementById('income-banner');
+  if (banner) {
+    banner.style.opacity   = '0';
+    banner.style.transform = 'translateY(-6px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      banner.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      banner.style.opacity    = '1';
+      banner.style.transform  = 'translateY(0)';
+    }));
+  }
+}
+
 function _renderSparkline(exps) {
   const svg = document.getElementById('h-sparkline');
   if (!svg) return;
@@ -331,6 +403,7 @@ export function renderHome() {
   }
   renderInsights();
   if (typeof window.renderNotifBanner === 'function') window.renderNotifBanner();
+  _renderIncomeBanner();
 }
 
 export function renderQuests() {

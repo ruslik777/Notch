@@ -18,6 +18,7 @@ import {
   openEditById, saveExpense, deleteExpense,
   openIncomeModal, closeIncomeModal, handleIncomeOverlayClick, buildIncomeTypeGrid,
   selectIncomeType, validateIncomeForm, saveIncome,
+  saveIncomeBanner, snoozeIncomeBanner,
   openSettings, closeSettings, handleSettingsOverlay, saveSettings,
   setCurrency,
   addSavingsGoal, removeSavingsGoal, depositSavingsGoal,
@@ -235,6 +236,7 @@ Object.assign(window, {
   // income modal
   openIncomeModal, closeIncomeModal, handleIncomeOverlayClick,
   selectIncomeType, validateIncomeForm, saveIncome,
+  saveIncomeBanner, snoozeIncomeBanner,
 
   // settings
   openSettings, closeSettings, handleSettingsOverlay, saveSettings,

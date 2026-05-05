@@ -215,6 +215,55 @@ export async function saveIncome() {
   renderAll();
 }
 
+/* ── Income banner (1st-of-month prompt) ── */
+
+export async function saveIncomeBanner() {
+  const input  = document.getElementById('ib-amount');
+  const amount = parseFloat(input?.value);
+  if (!amount || amount <= 0) return;
+
+  const inc = {
+    id:       Date.now(),
+    amount,
+    type:     'salary',
+    typeName: 'Зарплата',
+    note:     '',
+    date:     toDay(),
+  };
+
+  STATE.incomes.push(inc);
+  _insertIncome(inc);
+  addXP(10);
+  localStorage.removeItem('income_banner_snooze');
+
+  const banner = document.getElementById('income-banner');
+  if (banner) {
+    banner.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    banner.style.opacity    = '0';
+    banner.style.transform  = 'translateY(-8px)';
+    setTimeout(() => renderAll(), 270);
+  } else {
+    renderAll();
+  }
+}
+
+export function snoozeIncomeBanner(day) {
+  const now  = new Date();
+  const date = new Date(now.getFullYear(), now.getMonth(), day);
+  localStorage.setItem('income_banner_snooze', date.toISOString().split('T')[0]);
+
+  const banner = document.getElementById('income-banner');
+  if (banner) {
+    banner.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    banner.style.opacity    = '0';
+    banner.style.transform  = 'translateY(-8px)';
+    setTimeout(() => {
+      const slot = document.getElementById('income-banner-slot');
+      if (slot) slot.innerHTML = '';
+    }, 270);
+  }
+}
+
 /* ── Settings modal ── */
 
 export function openSettings() {
