@@ -42,7 +42,11 @@ export function renderSavingsGoals() {
   if (!el || !user) return;
   const goals = user.savingsGoals || [];
   if (goals.length === 0) {
-    el.innerHTML = '<div class="goal-empty">Добавь цель — например, ноутбук или отпуск</div>';
+    el.innerHTML = `<div class="empty-state">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <div class="empty-state-title">Целей пока нет</div>
+      <div class="empty-state-sub">Добавь что-то конкретное — ноутбук, отпуск, подушка безопасности</div>
+    </div>`;
     return;
   }
   el.innerHTML = goals.map(g => {
@@ -346,7 +350,12 @@ export function renderHome() {
 
   const sorted = [...todayExps].reverse().slice(0, 5);
   document.getElementById('h-txs').innerHTML = sorted.length === 0
-    ? '<div class="empty-txs">Записей пока нет.<br>Нажми + чтобы добавить.</div>'
+    ? `<div class="empty-state">
+        <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
+        <div class="empty-state-title">Трат за сегодня нет</div>
+        <div class="empty-state-sub">Запиши первую — получишь XP и поддержишь стрик</div>
+        <button class="empty-state-btn" onclick="openModal()">Записать трату</button>
+      </div>`
     : sorted.map(e => `
         <div class="tx">
           <div class="tx-ico">${e.icon}</div>
@@ -475,7 +484,12 @@ export function renderHistory() {
   if (!el) return;
 
   if (exps.length === 0) {
-    el.innerHTML = '<div class="hist-empty">Записей пока нет.<br>Нажми + чтобы добавить первую трату.</div>';
+    el.innerHTML = `<div class="empty-state empty-state-lg">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <div class="empty-state-title">История пуста</div>
+      <div class="empty-state-sub">Начни записывать траты — здесь появится твоя финансовая история</div>
+      <button class="empty-state-btn" onclick="openModal()">Записать первую трату</button>
+    </div>`;
     return;
   }
 

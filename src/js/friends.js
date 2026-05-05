@@ -134,7 +134,16 @@ export function _renderFriendsList() {
   }
 
   if (!html) {
-    html = '<div class="friends-empty">Пока нет друзей.<br>Поделись своим Notch ID или введи чужой — и вперёд!</div>';
+    const notchId = STATE.user?.notchId || '';
+    html = `<div class="empty-state empty-state-lg">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+      <div class="empty-state-title">Друзей пока нет</div>
+      <div class="empty-state-sub">Поделись своим ID — друг введёт его и вы свяжетесь</div>
+      ${notchId ? `<div class="empty-state-id-row">
+        <span class="empty-state-id-val">${notchId}</span>
+        <button class="empty-state-copy-btn" onclick="copyNotchId()">Скопировать</button>
+      </div>` : ''}
+    </div>`;
   }
   wrap.innerHTML = html;
 }
@@ -247,7 +256,14 @@ function _renderFeedItem(item) {
 export async function loadActivityFeed() {
   const wrap = document.getElementById('activity-feed-wrap'); if (!wrap) return;
   const friendUids = _friendsCache.filter(f => f.status === 'accepted').map(f => f.friendUid);
-  if (!friendUids.length) { wrap.innerHTML = '<div class="feed-empty">Добавь друзей, чтобы видеть их активность</div>'; return; }
+  if (!friendUids.length) {
+    wrap.innerHTML = `<div class="empty-state empty-state-lg">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="empty-state-title">Лента пуста</div>
+      <div class="empty-state-sub">Здесь будут достижения, стрики и рекорды твоих друзей</div>
+    </div>`;
+    return;
+  }
 
   const { data, error } = await supa.from('feed_items')
     .select('id, user_id, type, payload, created_at, feed_reactions(item_id, user_id, emoji)')
@@ -255,8 +271,9 @@ export async function loadActivityFeed() {
     .order('created_at', { ascending: false })
     .limit(20);
 
-  if (error || !data?.length) { wrap.innerHTML = '<div class="feed-empty">Пока нет активности</div>'; return; }
-  wrap.innerHTML = data.map(_renderFeedItem).filter(Boolean).join('') || '<div class="feed-empty">Пока нет активности</div>';
+  const noActivity = `<div class="empty-state"><svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><div class="empty-state-title">Пока тихо</div><div class="empty-state-sub">Активность друзей появится здесь — достижения, стрики, рекорды</div></div>`;
+  if (error || !data?.length) { wrap.innerHTML = noActivity; return; }
+  wrap.innerHTML = data.map(_renderFeedItem).filter(Boolean).join('') || noActivity;
 }
 
 export async function toggleReaction(itemId, emoji) {
