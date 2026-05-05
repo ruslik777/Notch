@@ -495,12 +495,6 @@
           </svg>
           QR чека
         </button>
-        <button class="scan-qr-btn" onclick="openReceiptSheet()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-          Скрин чека
-        </button>
       </div>
       <div class="cat-label">Категория</div>
       <div class="cat-grid" id="cat-grid"></div>
@@ -849,18 +843,6 @@
     <div class="friend-search-result" id="friend-search-result"></div>
     <div id="friends-list-wrap"></div>
     <div style="height:32px"></div>
-  </div>
-
-  <!-- ── RECEIPT SCANNER SHEET ── -->
-  <div id="receipt-overlay" class="fp-overlay" onclick="closeReceiptSheet()"></div>
-  <div id="receipt-sheet" class="fp-sheet rc-sheet">
-    <div class="fp-handle"></div>
-    <div class="rc-header">
-      <div class="rc-title">Скан чека</div>
-      <button class="fp-close" onclick="closeReceiptSheet()">✕</button>
-    </div>
-    <div id="receipt-body" class="rc-body"></div>
-    <div id="receipt-footer" class="rc-footer" style="display:none"></div>
   </div>
 
   <!-- ── STAT SHEETS (budget / days / goals) ── -->
