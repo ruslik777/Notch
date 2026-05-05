@@ -13,7 +13,7 @@
   --t3:    #B09580;
   --green: #1E7A3A;
   --red:   #CC2B20;
-  --gold:  #C96800;
+  --gold:  #D97706;
   --brd:   #E4DAD0;
   --b2:    #EDE6DC;
   --ease:        cubic-bezier(0.23,1,0.32,1);
@@ -49,7 +49,7 @@ body {
 .levelup-overlay { cursor: pointer; }
 .levelup-inner {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  background: var(--s1); border: 1px solid rgba(232,160,32,.3);
+  background: var(--s1); border: 1px solid rgba(217,119,6,.3);
   border-radius: 28px; padding: 40px 32px; max-width: 300px; width: calc(100% - 48px);
   text-align: center;
 }
@@ -84,7 +84,7 @@ body {
   border-radius: 12px; display: flex; align-items: center; gap: 9px;
   font-size: 13px; font-weight: 600;
 }
-.budget-alert.warn   { background: rgba(232,160,32,.12); color: var(--gold); border: 1px solid rgba(232,160,32,.25); }
+.budget-alert.warn   { background: rgba(217,119,6,.12); color: var(--gold); border: 1px solid rgba(217,119,6,.25); }
 .budget-alert.danger { background: rgba(240,114,114,.12); color: var(--red);  border: 1px solid rgba(240,114,114,.25); }
 .budget-alert svg    { flex-shrink: 0; width: 16px; height: 16px; }
 
@@ -147,7 +147,7 @@ body {
 }
 .league-tier-badge.bronze  { background: rgba(201,124,58,.15); color: #C97C3A; }
 .league-tier-badge.silver  { background: rgba(160,170,187,.15); color: #A0AABB; }
-.league-tier-badge.gold    { background: rgba(232,160,32,.15);  color: var(--gold); }
+.league-tier-badge.gold    { background: rgba(217,119,6,.15);  color: var(--gold); }
 .league-tier-badge.diamond { background: rgba(78,204,163,.15);  color: var(--ac); }
 .league-row {
   display: flex; align-items: center; gap: 10px;
@@ -747,7 +747,7 @@ body {
   border-radius: 16px; padding: 16px;
 }
 .hcard.hcard-primary {
-  border-color: rgba(232,160,32,.2);
+  border-color: rgba(217,119,6,.2);
   background: var(--s2);
   padding: 18px 16px;
 }
