@@ -97,3 +97,39 @@ CREATE POLICY "incomes_delete" ON incomes FOR DELETE USING (auth.uid() = user_id
 
 -- savings goals (migration)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS savings_goals JSONB DEFAULT '[]'::jsonb;
+
+-- push subscriptions
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  user_id          UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  subscription     JSONB NOT NULL,
+  timezone         TEXT DEFAULT 'Europe/Moscow',
+  sent_morning     DATE,
+  sent_evening     DATE,
+  sent_lastchance  DATE,
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY IF NOT EXISTS "push_subs_select" ON push_subscriptions FOR SELECT  USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS "push_subs_insert" ON push_subscriptions FOR INSERT  WITH CHECK (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS "push_subs_update" ON push_subscriptions FOR UPDATE  USING (auth.uid() = user_id);
+CREATE POLICY IF NOT EXISTS "push_subs_delete" ON push_subscriptions FOR DELETE  USING (auth.uid() = user_id);
+
+-- cron: call send-daily-push every 29 minutes
+-- Requires pg_cron + pg_net extensions (enable in Supabase Dashboard → Database → Extensions)
+-- Replace YOUR_PROJECT_REF and YOUR_ANON_KEY before running
+/*
+SELECT cron.schedule(
+  'notch-send-push',
+  '*/29 * * * *',
+  $$
+    SELECT net.http_post(
+      url     := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-daily-push',
+      headers := jsonb_build_object(
+        'Content-Type',  'application/json',
+        'Authorization', 'Bearer YOUR_ANON_KEY'
+      ),
+      body    := '{}'::jsonb
+    ) AS request_id;
+  $$
+);
+*/
