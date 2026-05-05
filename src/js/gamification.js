@@ -84,6 +84,31 @@ export function addXP(amount) {
   updateLeagueXP(amount);
 }
 
+/* ── Achievement toast queue ── */
+const _achQueue = [];
+let _achShowing = false;
+
+function _drainAchQueue() {
+  if (_achShowing || !_achQueue.length) return;
+  const a = _achQueue.shift();
+  _achShowing = true;
+  document.getElementById('ach-toast-icon').textContent = a.icon;
+  document.getElementById('ach-toast-name').textContent = a.name;
+  document.getElementById('ach-toast-desc').textContent = a.desc;
+  const el = document.getElementById('ach-toast');
+  el.classList.add('show');
+  if (navigator.vibrate) navigator.vibrate([60, 30, 120]);
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => { _achShowing = false; _drainAchQueue(); }, 350);
+  }, 3500);
+}
+
+function _showAchievementToast(a) {
+  _achQueue.push(a);
+  _drainAchQueue();
+}
+
 export function showXPToast(amount) {
   const el = document.getElementById('xp-toast');
   document.getElementById('xp-toast-text').textContent = `+${amount} XP`;
@@ -251,7 +276,10 @@ export function checkAchievements() {
 
   if (changed) {
     DB.setAchievs(achieved);
-    if (newlyUnlocked.length) _postAchievementsToFeed(newlyUnlocked);
+    if (newlyUnlocked.length) {
+      _postAchievementsToFeed(newlyUnlocked);
+      newlyUnlocked.forEach(a => _showAchievementToast(a));
+    }
   }
   return achieved;
 }
