@@ -1,26 +1,26 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 :root {
-  --bg:    #F8F4EE;
+  --bg:    #F3EDE5;
   --s1:    #FFFFFF;
-  --s2:    #F0E8D8;
-  --s3:    #EDE5D8;
-  --ac:    #E5601A;
-  --a10:   rgba(229,96,26,.10);
-  --a20:   rgba(229,96,26,.22);
-  --text:  #18120A;
-  --t2:    #7A6858;
-  --t3:    #B09A7A;
-  --green: #2A8040;
-  --red:   #C03020;
-  --gold:  #E8A020;
-  --brd:   #EDE5D8;
-  --b2:    #F2EAE0;
+  --s2:    #EDE6DC;
+  --s3:    #E4DCD2;
+  --ac:    #FF6B00;
+  --a10:   rgba(255,107,0,.10);
+  --a20:   rgba(255,107,0,.22);
+  --text:  #1A1108;
+  --t2:    #7A6354;
+  --t3:    #B09580;
+  --green: #1E7A3A;
+  --red:   #CC2B20;
+  --gold:  #C96800;
+  --brd:   #E4DAD0;
+  --b2:    #EDE6DC;
   --ease:        cubic-bezier(0.23,1,0.32,1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-html, body { height: 100%; background: #F0EAE0; overflow: hidden; }
+html, body { height: 100%; background: #EAE3DA; overflow: hidden; }
 
 body {
   font-family: 'Figtree', sans-serif;
@@ -38,10 +38,10 @@ body {
 }
 
 @media (min-height: 860px) and (min-width: 500px) {
-  body { background: #E8DDD0; }
+  body { background: #DDD6CC; }
   #app {
     max-height: 844px; border-radius: 44px;
-    box-shadow: 0 0 0 1.5px rgba(24,18,10,.09), 0 48px 96px rgba(0,0,0,.18);
+    box-shadow: 0 0 0 1px rgba(26,17,8,.08), 0 48px 96px rgba(100,60,20,.20);
   }
 }
 
@@ -123,7 +123,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: color .15s, border-color .15s;
 }
-.tx-edit:active { color: var(--ac); border-color: rgba(229,96,26,.4); }
+.tx-edit:active { color: var(--ac); border-color: rgba(255,107,0,.4); }
 
 /* ── PERSONAL QUEST ── */
 .q-card.personal { border-color: rgba(78,204,163,.2); background: var(--s2); }
@@ -656,7 +656,7 @@ body {
   border-radius: 14px; display: flex; align-items: center;
   justify-content: center; cursor: pointer; margin: 0 auto;
   transition: opacity .18s, transform .15s var(--ease);
-  box-shadow: 0 4px 20px rgba(229,96,26,.3);
+  box-shadow: 0 4px 20px rgba(255,107,0,.32);
 }
 .nav-add:active { transform: scale(0.92); }
 .nav-add svg { width: 24px; height: 24px; color: #fff; stroke-width: 2.5; }
@@ -688,7 +688,7 @@ body {
   width: 200px; height: 200px; flex-shrink: 0;
 }
 .ring-track {
-  fill: none; stroke: #EDE5D8; stroke-width: 14;
+  fill: none; stroke: #E4D9CC; stroke-width: 14;
 }
 .ring-fill {
   fill: none; stroke: var(--ac); stroke-width: 14;
@@ -697,7 +697,7 @@ body {
   stroke-dashoffset: 490.09;
   transform: rotate(-90deg); transform-origin: 50% 50%;
   transition: stroke-dashoffset 1s var(--ease);
-  filter: drop-shadow(0 0 8px rgba(229,96,26,.35));
+  filter: drop-shadow(0 0 8px rgba(255,107,0,.35));
 }
 .xp-ring-center {
   position: absolute; inset: 0;
@@ -1225,6 +1225,153 @@ body {
 .share-btn.primary   { background: var(--ac); color: #fff; }
 .share-btn.secondary { background: var(--s2); color: var(--text); }
 .share-hint { font-size: 12px; color: var(--t2); text-align: center; }
+
+/* ═══════════════════════════════════════════
+   MORNING EMBER — LIGHT THEME
+   Warm parchment base, amber-tinted shadows,
+   white cards floating on textured warmth
+═══════════════════════════════════════════ */
+html[data-theme="light"] #app {
+  background: var(--bg);
+  /* Subtle warm glow from top — morning light effect */
+  background-image: radial-gradient(ellipse 130% 38% at 50% -5%, rgba(255,140,40,.05) 0%, transparent 65%);
+}
+
+/* Nav bar — frosted warm parchment */
+html[data-theme="light"] .bot-nav {
+  background: rgba(243,237,229,.93);
+  border-top-color: rgba(140,90,40,.1);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+}
+
+/* Cards — elevated white on warm parchment */
+html[data-theme="light"] .hcard {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,.0);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.9) inset,
+    0 2px 10px rgba(140,90,40,.08),
+    0 1px 3px rgba(140,90,40,.05);
+}
+html[data-theme="light"] .hcard.hcard-primary {
+  background: linear-gradient(150deg, #FFFDF8 0%, #FFF7ED 100%);
+  border-color: rgba(255,107,0,.14);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.95) inset,
+    0 4px 24px rgba(140,90,40,.12),
+    0 1px 4px rgba(140,90,40,.07);
+}
+
+/* Stat chips — white pills with warm lift */
+html[data-theme="light"] .stat-chip {
+  background: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(140,90,40,.08), 0 1px 2px rgba(140,90,40,.04);
+}
+html[data-theme="light"] .stat-chip-btn:active {
+  background: #F8F2EA;
+  box-shadow: 0 1px 4px rgba(140,90,40,.06);
+  transform: scale(.96);
+}
+
+/* XP ring — warm track */
+html[data-theme="light"] .ring-track { stroke: #E8DECE; }
+html[data-theme="light"] .ring-fill  {
+  filter: drop-shadow(0 0 5px rgba(255,107,0,.28)) drop-shadow(0 0 12px rgba(255,107,0,.12));
+}
+
+/* Balance — amber gold for positive */
+html[data-theme="light"] .balance-amount.positive { color: var(--gold); }
+
+/* Quest badges — warm circular glows */
+html[data-theme="light"] .q-check {
+  background: #F0EAE2;
+  border: 1.5px solid #E4DAD0;
+  border-radius: 50%;
+}
+html[data-theme="light"] .q-check.done {
+  background: rgba(255,107,0,.1);
+  border-color: rgba(255,107,0,.4);
+  box-shadow: 0 0 8px rgba(255,107,0,.18);
+  color: #FF6B00;
+  border-radius: 50%;
+}
+
+/* Quest cards */
+html[data-theme="light"] .q-card {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,.0);
+  box-shadow: 0 2px 8px rgba(140,90,40,.07), 0 1px 2px rgba(140,90,40,.04);
+}
+
+/* History cards */
+html[data-theme="light"] .hist-card {
+  background: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 2px 10px rgba(140,90,40,.08), 0 1px 3px rgba(140,90,40,.04);
+}
+
+/* Profile overview */
+html[data-theme="light"] .p-overview-list {
+  background: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 2px 10px rgba(140,90,40,.08), 0 1px 3px rgba(140,90,40,.04);
+}
+html[data-theme="light"] .p-ach-card {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(140,90,40,.06);
+}
+html[data-theme="light"] .p-ach-card.done {
+  background: rgba(255,107,0,.07);
+  border-color: rgba(255,107,0,.28);
+  box-shadow: 0 2px 12px rgba(255,107,0,.12);
+}
+
+/* Notif prompt */
+html[data-theme="light"] .notif-prompt {
+  background: rgba(255,107,0,.06);
+  border-color: rgba(255,107,0,.18);
+  box-shadow: 0 2px 8px rgba(255,107,0,.07);
+}
+
+/* Notif row */
+html[data-theme="light"] .notif-row {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(140,90,40,.06);
+}
+
+/* Level up card */
+html[data-theme="light"] .levelup-inner {
+  box-shadow: 0 8px 40px rgba(140,90,40,.18), 0 2px 8px rgba(0,0,0,.06);
+  border-color: rgba(255,107,0,.22);
+}
+
+/* League me-row */
+html[data-theme="light"] .league-row.me {
+  background: rgba(255,107,0,.08);
+  box-shadow: inset 0 0 0 1px rgba(255,107,0,.14);
+}
+
+/* Drawers and sheets — pure white */
+html[data-theme="light"] .info-sheet,
+html[data-theme="light"] .nudge-prompt,
+html[data-theme="light"] .fp-sheet { background: #FFFFFF; }
+
+/* Primary button */
+html[data-theme="light"] .btn-primary {
+  background: #FF6B00;
+  box-shadow: 0 4px 16px rgba(255,107,0,.32), 0 1px 3px rgba(255,107,0,.2);
+}
+
+/* Savings tier */
+html[data-theme="light"] .ss-tier,
+html[data-theme="light"] .ss-goal {
+  background: #FFFFFF;
+  border-color: rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(140,90,40,.07);
+}
 
 /* ── DARK MODE ── */
 /* ═══════════════════════════════════════════
