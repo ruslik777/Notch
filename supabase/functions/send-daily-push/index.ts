@@ -45,9 +45,10 @@ function whichSlot(h: number, m: number): SlotId | null {
   return null;
 }
 
-Deno.serve(async () => {
-  const now  = new Date();
-  const supa = createClient(SUPA_URL, SUPA_KEY);
+Deno.serve(async (req) => {
+  const force = new URL(req.url).searchParams.has('force');
+  const now   = new Date();
+  const supa  = createClient(SUPA_URL, SUPA_KEY);
 
   const { data: subs, error } = await supa
     .from('push_subscriptions')
@@ -69,14 +70,14 @@ Deno.serve(async () => {
     const tz       = sub.timezone || 'Europe/Moscow';
     const today    = localDateStr(now, tz);
     const { h, m } = localHourMin(now, tz);
-    const slot = whichSlot(h, m);
+    const slot     = force ? 'evening' : whichSlot(h, m);
     if (!slot) continue;
 
     const sentKey = `sent_${slot}` as keyof typeof sub;
-    if (sub[sentKey] === today) continue;
+    if (!force && sub[sentKey] === today) continue;
 
     const last = lastEntry.get(sub.user_id);
-    if (last && last >= today) continue;
+    if (!force && last && last >= today) continue;
 
     const info    = SLOTS.find(s => s.id === slot)!;
     const payload = JSON.stringify({ title: info.title, body: info.body, tag: 'notch-' + slot });
@@ -91,7 +92,7 @@ Deno.serve(async () => {
           );
         })
         .catch(async (err) => {
-          if (err?.statusCode === 410) {
+          if (err?.statusCode === 410 || err?.statusCode === 401) {
             await supa.from('push_subscriptions').delete().eq('user_id', sub.user_id);
           }
         })

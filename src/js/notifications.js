@@ -22,11 +22,17 @@ export async function refreshPushSubscription() {
   try {
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
+    // Re-subscribe if VAPID key rotated — old sub won't accept pushes from new key
+    if (sub && localStorage.getItem('vapid_key_used') !== VAPID_PUBLIC_KEY) {
+      await sub.unsubscribe();
+      sub = null;
+    }
     if (!sub) {
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: _urlB64ToUint8Array(VAPID_PUBLIC_KEY),
       });
+      localStorage.setItem('vapid_key_used', VAPID_PUBLIC_KEY);
     }
     if (sub) await _saveSub(sub);
   } catch(e) { console.warn('push refresh', e); }
