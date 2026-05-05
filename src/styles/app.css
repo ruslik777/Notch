@@ -956,6 +956,29 @@ body {
 .balance-stat-val.inc { color: var(--gold); }
 .balance-stat-val.exp { color: var(--red); }
 .balance-stat-lbl { font-size: 11px; color: var(--t2); margin-top: 1px; }
+.balance-stat-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.balance-stat-tap:active .balance-stat-val { opacity: .65; }
+
+/* Income history in stat sheet */
+.inc-hist-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--b2);
+}
+.inc-hist-row:last-child { border-bottom: none; }
+.inc-hist-info { flex: 1; min-width: 0; }
+.inc-hist-name { font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inc-hist-date { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.inc-hist-amt  { font-size: 14px; font-weight: 700; color: var(--green); flex-shrink: 0; }
+.inc-hist-del  {
+  flex-shrink: 0; width: 26px; height: 26px; margin-left: 4px;
+  border: 1px solid var(--brd); border-radius: 7px;
+  background: transparent; color: var(--t3); font-size: 16px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.inc-hist-del:active { color: var(--red); border-color: rgba(240,114,114,.4); background: rgba(240,114,114,.07); }
 
 /* ── INCOME MODAL ── */
 .income-type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }

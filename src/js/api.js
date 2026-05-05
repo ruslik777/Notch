@@ -92,6 +92,12 @@ export async function _insertIncome(inc) {
   } catch(e) { console.error('insertIncome', e); }
 }
 
+export async function _deleteIncome(id) {
+  if (!AUTH.uid) return;
+  try { await supa.from('incomes').delete().eq('id', id).eq('user_id', AUTH.uid); }
+  catch(e) { console.error('deleteIncome', e); }
+}
+
 export async function _insertExpense(exp) {
   if (!AUTH.uid) return;
   try {

@@ -1,6 +1,6 @@
 import { CATS, CAT_SVG, INCOME_TYPES, ACHIEVEMENTS } from './config.js';
 import { STATE, DB, AUTH, supa } from './api.js';
-import { _syncUser, _insertIncome, _insertExpense } from './api.js';
+import { _syncUser, _insertIncome, _insertExpense, _deleteIncome } from './api.js';
 import { toDay, fmt, getCur } from './format.js';
 import { addXP, incrementStreak, checkQuestCompletion, checkAchievements, getFinancialAge } from './gamification.js';
 import { showPostExpenseNudge } from './friends.js';
@@ -623,6 +623,54 @@ function _openStatSheet(html) {
 export function closeStatSheet() {
   document.getElementById('ss-overlay')?.classList.remove('open');
   document.getElementById('ss-sheet')?.classList.remove('open');
+}
+
+export function openIncomeSheet() {
+  const incomes = (STATE.incomes || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const now     = new Date();
+  const mStart  = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const monthTotal = incomes.filter(i => i.date >= mStart).reduce((s, i) => s + i.amount, 0);
+
+  const fmtDate = str => {
+    const d = new Date(str + 'T12:00:00');
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  };
+
+  const rows = incomes.length === 0
+    ? '<div style="font-size:13px;color:var(--t2);padding:12px 0">Доходов пока нет</div>'
+    : incomes.map(i => `
+        <div class="inc-hist-row" id="inc-row-${i.id}">
+          <div class="inc-hist-info">
+            <div class="inc-hist-name">${i.typeName || 'Доход'}${i.note ? ' · ' + i.note : ''}</div>
+            <div class="inc-hist-date">${fmtDate(i.date)}</div>
+          </div>
+          <div class="inc-hist-amt">+${fmt(i.amount)}</div>
+          <button class="inc-hist-del" onclick="deleteIncome('${i.id}')">×</button>
+        </div>`).join('');
+
+  _openStatSheet(`
+    <div class="ss-hero">
+      <div class="ss-title">Доходы</div>
+      <div class="ss-sub">${now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</div>
+      <div class="ss-big" style="color:var(--green)">${fmt(monthTotal)}</div>
+      <div class="ss-sub">получено в этом месяце</div>
+    </div>
+    <div class="ss-rows" id="inc-hist-list">${rows}</div>
+    <div class="ss-footer">
+      <button class="ss-btn" onclick="closeStatSheet();openIncomeModal()">+ Добавить доход</button>
+    </div>`);
+}
+
+export async function deleteIncome(id) {
+  STATE.incomes = (STATE.incomes || []).filter(i => String(i.id) !== String(id));
+  _deleteIncome(id);
+  const row = document.getElementById('inc-row-' + id);
+  if (row) {
+    row.style.transition = 'opacity .2s, transform .2s';
+    row.style.opacity    = '0';
+    row.style.transform  = 'translateX(12px)';
+    setTimeout(() => { row.remove(); renderAll(); }, 220);
+  } else { renderAll(); }
 }
 
 export function openBudgetSheet() {
