@@ -11,6 +11,7 @@ import {
   renderCharPicker, setNotifChar,
   updateBioToggle, toggleBioFromProfile,
   refreshPushSubscription,
+  renderNotifBanner, dismissNotifPrompt,
 } from './notifications.js';
 import {
   openModal, closeModal, handleOverlayClick, selectCat, validateForm, buildCatGrid,
@@ -168,6 +169,12 @@ async function init() {
       const checked = checkStreak(STATE.user);
       DB.setUser(checked);
       const goMain = () => {
+        // count sessions for notification prompt timing
+        if (!sessionStorage.getItem('session_counted')) {
+          const opens = parseInt(localStorage.getItem('app_opens') || '0');
+          localStorage.setItem('app_opens', (opens + 1).toString());
+          sessionStorage.setItem('session_counted', '1');
+        }
         showScreen('main');
         renderAll();
         loadLeague();
@@ -277,6 +284,7 @@ Object.assign(window, {
   // notifications
   toggleNotifications, setNotifChar,
   updateNotifToggle, updateBioToggle,
+  renderNotifBanner, dismissNotifPrompt,
 
   // biometric (used by notifications.js toggleBioFromProfile via window)
   isBioAvailable, offerBioSetup,

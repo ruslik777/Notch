@@ -119,9 +119,67 @@ export async function toggleNotifications() {
   localStorage.setItem('notif_enabled', '1');
   updateNotifToggle();
   await _subscribePush();
+  renderNotifBanner();
 }
 
 export function scheduleStreakReminder() { /* legacy — сервер теперь шлёт сам */ }
+
+/* ── Notification prompt banner ── */
+
+function _shouldShowNotifPrompt() {
+  if (localStorage.getItem('notif_enabled') === '1') return false;
+  if (!('Notification' in window) || !('PushManager' in window)) return false;
+  if (Notification.permission === 'denied') return false;
+
+  // Show on 2nd+ visit OR when streak >= 3 (something to protect)
+  const opens  = parseInt(localStorage.getItem('app_opens') || '0');
+  const streak = STATE.user?.streak || 0;
+  if (opens < 2 && streak < 3) return false;
+
+  // Re-prompt after 7 days if dismissed
+  const dismissedAt = parseInt(localStorage.getItem('notif_dismissed_at') || '0');
+  if (dismissedAt && Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return false;
+
+  return true;
+}
+
+export function dismissNotifPrompt() {
+  localStorage.setItem('notif_dismissed_at', Date.now().toString());
+  const slot = document.getElementById('notif-prompt-slot');
+  if (!slot) return;
+  slot.style.opacity   = '0';
+  slot.style.transform = 'translateY(-6px)';
+  setTimeout(() => { slot.innerHTML = ''; slot.style.cssText = ''; }, 250);
+}
+
+export function renderNotifBanner() {
+  const slot = document.getElementById('notif-prompt-slot');
+  if (!slot) return;
+  if (!_shouldShowNotifPrompt()) { slot.innerHTML = ''; return; }
+
+  slot.innerHTML = `<div class="notif-prompt">
+    <div class="notif-prompt-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+    </div>
+    <div class="notif-prompt-text">
+      <div class="notif-prompt-title">Не теряй стрик</div>
+      <div class="notif-prompt-sub">Включи уведомления — напомним вовремя</div>
+    </div>
+    <div class="notif-prompt-actions">
+      <button class="notif-prompt-btn" onclick="toggleNotifications()">Включить</button>
+      <button class="notif-prompt-dismiss" onclick="dismissNotifPrompt()">&#xd7;</button>
+    </div>
+  </div>`;
+  slot.style.opacity   = '0';
+  slot.style.transform = 'translateY(-6px)';
+  requestAnimationFrame(() => {
+    slot.style.opacity   = '1';
+    slot.style.transform = 'translateY(0)';
+  });
+}
 
 /* ── Biometric toggle in settings ── */
 

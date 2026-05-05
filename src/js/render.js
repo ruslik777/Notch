@@ -259,6 +259,7 @@ export function renderHome() {
     }
   }
   renderInsights();
+  if (typeof window.renderNotifBanner === 'function') window.renderNotifBanner();
 }
 
 export function renderQuests() {

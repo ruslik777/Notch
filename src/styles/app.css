@@ -88,6 +88,32 @@ body {
 .budget-alert.danger { background: rgba(240,114,114,.12); color: var(--red);  border: 1px solid rgba(240,114,114,.25); }
 .budget-alert svg    { flex-shrink: 0; width: 16px; height: 16px; }
 
+/* ── NOTIFICATION PROMPT BANNER ── */
+#notif-prompt-slot { transition: opacity .25s, transform .25s; }
+.notif-prompt {
+  margin: 0 16px 12px; padding: 12px 14px;
+  border-radius: 14px; display: flex; align-items: center; gap: 10px;
+  background: rgba(78,204,163,.07); border: 1px solid rgba(78,204,163,.18);
+}
+.notif-prompt-icon { flex-shrink: 0; color: var(--ac); display: flex; }
+.notif-prompt-icon svg { width: 18px; height: 18px; }
+.notif-prompt-text { flex: 1; min-width: 0; }
+.notif-prompt-title { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.notif-prompt-sub   { font-size: 11px; color: var(--t2); margin-top: 2px; }
+.notif-prompt-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.notif-prompt-btn {
+  font-size: 12px; font-weight: 700; padding: 6px 12px;
+  border-radius: 8px; border: none; background: var(--ac); color: #fff;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform .12s, opacity .12s;
+}
+.notif-prompt-btn:active { transform: scale(.95); opacity: .85; }
+.notif-prompt-dismiss {
+  font-size: 17px; line-height: 1; color: var(--t3);
+  background: transparent; border: none; cursor: pointer; padding: 4px 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ── EDIT BUTTON ON TX ── */
 .tx-edit {
   flex-shrink: 0; width: 26px; height: 26px; margin-left: 4px;
