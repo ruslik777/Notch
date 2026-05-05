@@ -433,19 +433,31 @@ export function renderHome() {
         if (!catMap[e.catId]) catMap[e.catId] = { name: e.catName, icon: e.icon, total: 0 };
         catMap[e.catId].total += e.amount;
       });
-      const cats   = Object.values(catMap).sort((a, b) => b.total - a.total);
-      const maxVal = cats[0].total || 1;
-      analyticsEl.innerHTML = cats.map(cat => `
-        <div class="cat-bar-row">
+      const cats      = Object.values(catMap).sort((a, b) => b.total - a.total);
+      const maxVal    = cats[0].total || 1;
+      const totalSpent = periodExps.reduce((s, e) => s + e.amount, 0);
+      analyticsEl.innerHTML = cats.slice(0, 6).map((cat, i) => {
+        const pct = Math.round(cat.total / totalSpent * 100);
+        return `<div class="cat-bar-row">
           <div class="cat-bar-icon">${cat.icon}</div>
           <div class="cat-bar-info">
-            <div class="cat-bar-name">${cat.name}</div>
+            <div class="cat-bar-top">
+              <span class="cat-bar-name">${cat.name}</span>
+              <span class="cat-bar-pct">${pct}%</span>
+            </div>
             <div class="cat-bar-track">
-              <div class="cat-bar-fill" style="transform:scaleX(${cat.total / maxVal})"></div>
+              <div class="cat-bar-fill${i === 0 ? ' cat-bar-fill-top' : ''}" data-scale="${(cat.total / maxVal).toFixed(3)}"></div>
             </div>
           </div>
           <div class="cat-bar-amt">−${fmt(cat.total)}</div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
+      // Animate bars after DOM paint
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        analyticsEl.querySelectorAll('.cat-bar-fill').forEach(el => {
+          el.style.transform = `scaleX(${el.dataset.scale})`;
+        });
+      }));
     }
   }
   renderInsights();

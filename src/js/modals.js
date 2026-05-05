@@ -134,6 +134,9 @@ export async function saveExpense() {
 
   closeModal();
   renderAll();
+  if (navigator.vibrate) navigator.vibrate(40);
+  const txsEl = document.getElementById('h-txs');
+  if (txsEl) { txsEl.classList.add('tx-just-added'); setTimeout(() => txsEl.classList.remove('tx-just-added'), 600); }
   setTimeout(showPostExpenseNudge, 600);
 }
 
