@@ -91,12 +91,61 @@ export function showXPToast(amount) {
   setTimeout(() => el.classList.remove('show'), 2200);
 }
 
+function _fireConfetti() {
+  const canvas = document.getElementById('lu-canvas'); if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const colors = ['#FF6B00','#FFB347','#FFD700','#FFFFFF','#FF8C42','#FFF3E0','#FF6B00'];
+  const particles = Array.from({ length: 65 }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 5 + Math.random() * 7;
+    return {
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 4,
+      r: 3 + Math.random() * 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI * 2, rotV: (Math.random() - .5) * .25,
+      rect: Math.random() > .45,
+    };
+  });
+  let frame = 0;
+  const MAX = 90;
+  (function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += .22; p.rot += p.rotV;
+      ctx.globalAlpha = Math.max(0, 1 - frame / MAX);
+      ctx.fillStyle = p.color;
+      if (p.rect) {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore();
+      } else {
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+    ctx.globalAlpha = 1;
+    if (++frame < MAX) requestAnimationFrame(tick);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  })();
+}
+
 export function showLevelUp(levelInfo) {
   const lvlNum = getLevelNum(DB.getUser()?.xp || 0);
   document.getElementById('lu-level').textContent = levelInfo.name;
   document.getElementById('lu-sub').textContent   = `Уровень ${lvlNum} · ${levelInfo.xp.toLocaleString('ru')} XP`;
-  document.getElementById('levelup-overlay').classList.add('show');
-  setTimeout(closeLevelUp, 5000);
+
+  // Reset animations so they re-trigger
+  const overlay = document.getElementById('levelup-overlay');
+  overlay.classList.remove('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    overlay.classList.add('show');
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
+    setTimeout(_fireConfetti, 250);
+  }));
+
+  setTimeout(closeLevelUp, 6000);
 }
 
 export function closeLevelUp() {
