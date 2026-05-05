@@ -659,6 +659,30 @@ body {
 .ob-dot.on { background: var(--ac); width: 20px; border-radius: 3px; }
 .ob-spacer { flex: 1; }
 
+/* ── Onboarding step 4 (feature preview) ── */
+.ob-features {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 4px;
+}
+.ob-feature {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--s2); border: 1px solid var(--brd);
+  border-radius: 14px; padding: 14px 16px;
+  transition: background .2s;
+}
+.ob-feature-icon {
+  flex-shrink: 0;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--a10);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ac);
+}
+.ob-feature-icon svg { width: 20px; height: 20px; }
+.ob-feature-body { flex: 1; min-width: 0; }
+.ob-feature-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.ob-feature-desc  { font-size: 13px; color: var(--t2); }
+
 /* ── BUTTONS ── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -1704,6 +1728,15 @@ html[data-theme="dark"] .fp-stat  { border-color: rgba(255,107,0,.08); }
 html[data-theme="dark"] .notif-prompt {
   background: rgba(255,107,0,.07);
   border-color: rgba(255,107,0,.2);
+}
+
+/* Onboarding features dark */
+html[data-theme="dark"] .ob-feature {
+  background: rgba(255,107,0,.05);
+  border-color: rgba(255,107,0,.12);
+}
+html[data-theme="dark"] .ob-feature-icon {
+  background: rgba(255,107,0,.12);
 }
 
 /* Income banner dark */

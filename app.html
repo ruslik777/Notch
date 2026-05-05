@@ -85,6 +85,7 @@
         <div class="ob-dot on"></div>
         <div class="ob-dot"></div>
         <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
       </div>
       <div class="ob-q">Как тебя зовут?</div>
       <div class="ob-hint">Используется только внутри приложения</div>
@@ -97,6 +98,7 @@
       <div class="ob-dots">
         <div class="ob-dot"></div>
         <div class="ob-dot on"></div>
+        <div class="ob-dot"></div>
         <div class="ob-dot"></div>
       </div>
       <div class="ob-q">Сколько зарабатываешь в месяц?</div>
@@ -111,12 +113,55 @@
         <div class="ob-dot"></div>
         <div class="ob-dot"></div>
         <div class="ob-dot on"></div>
+        <div class="ob-dot"></div>
       </div>
       <div class="ob-q">Сколько хочешь откладывать в месяц?</div>
       <div class="ob-hint">Вычтем из дохода — получится бюджет</div>
       <input class="ob-input" id="ob-savings" type="number" inputmode="numeric" placeholder="15 000" min="0">
       <div class="ob-spacer"></div>
-      <button class="btn btn-primary" onclick="obFinish()" id="ob3-btn">Начнём!</button>
+      <button class="btn btn-primary" onclick="obNext(3)" id="ob3-btn">Далее</button>
+    </div>
+
+    <div class="ob-step" id="ob4">
+      <div class="ob-dots">
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot"></div>
+        <div class="ob-dot on"></div>
+      </div>
+      <div class="ob-q">Всё готово, <span id="ob4-name"></span>!</div>
+      <div class="ob-hint">Вот как работает Notch</div>
+      <div class="ob-features">
+        <div class="ob-feature">
+          <div class="ob-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="ob-feature-body">
+            <div class="ob-feature-title">Зарабатывай XP</div>
+            <div class="ob-feature-desc">За каждую трату, квест и стрик</div>
+          </div>
+        </div>
+        <div class="ob-feature">
+          <div class="ob-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <div class="ob-feature-body">
+            <div class="ob-feature-title">Держи стрик</div>
+            <div class="ob-feature-desc">Записывай каждый день — серия растёт</div>
+          </div>
+        </div>
+        <div class="ob-feature">
+          <div class="ob-feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+          </div>
+          <div class="ob-feature-body">
+            <div class="ob-feature-title">Поднимай уровень</div>
+            <div class="ob-feature-desc">XP копится → ранг растёт → новые награды</div>
+          </div>
+        </div>
+      </div>
+      <div class="ob-spacer"></div>
+      <button class="btn btn-primary" onclick="obFinish()" id="ob4-btn">Начнём!</button>
     </div>
   </div>
 

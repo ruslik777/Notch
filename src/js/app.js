@@ -137,7 +137,7 @@ async function init() {
 
   document.getElementById('ob-name').addEventListener('keydown', e => { if (e.key === 'Enter' && !document.getElementById('ob1-btn').disabled) obNext(1); });
   document.getElementById('ob-income').addEventListener('keydown', e => { if (e.key === 'Enter' && !document.getElementById('ob2-btn').disabled) obNext(2); });
-  document.getElementById('ob-savings').addEventListener('keydown', e => { if (e.key === 'Enter') obFinish(); });
+  document.getElementById('ob-savings').addEventListener('keydown', e => { if (e.key === 'Enter') obNext(3); });
   document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-password').focus(); });
   document.getElementById('auth-password').addEventListener('keydown', e => { if (e.key === 'Enter') submitAuth(); });
 

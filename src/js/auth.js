@@ -115,8 +115,14 @@ export async function confirmReset() {
 
 export function obNext(step) {
   document.getElementById('ob' + step).classList.remove('active');
-  document.getElementById('ob' + (step + 1)).classList.add('active');
-  setTimeout(() => document.getElementById('ob' + (step + 1)).querySelector('.ob-input').focus(), 100);
+  const next = document.getElementById('ob' + (step + 1));
+  next.classList.add('active');
+  if (step === 3) {
+    const nameEl = document.getElementById('ob4-name');
+    if (nameEl) nameEl.textContent = document.getElementById('ob-name').value.trim();
+    return;
+  }
+  setTimeout(() => { const inp = next.querySelector('.ob-input'); if (inp) inp.focus(); }, 100);
 }
 
 export async function obFinish() {
