@@ -518,6 +518,22 @@ body {
 }
 .tx-del:active { color: var(--red); border-color: rgba(240,114,114,.4); background: rgba(240,114,114,.07); }
 
+/* ── SWIPE TO DELETE ── */
+.tx-swipe-wrap {
+  position: relative; overflow: hidden;
+}
+.tx-swipe-wrap + .tx-swipe-wrap { border-top: 1px solid var(--b2); }
+.tx-del-zone {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 76px;
+  background: var(--red); color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.hist-card .tx {
+  background: var(--s1);
+  position: relative; z-index: 1;
+  border-top: none !important;
+}
+
 /* ── PROFILE SETTINGS BUTTON ── */
 .profile-settings-btn {
   display: inline-flex; align-items: center; gap: 5px;
@@ -1160,7 +1176,7 @@ body {
 /* .hist-empty replaced by .empty-state.empty-state-lg */
 .hist-card  { background: var(--s1); border: 1px solid var(--brd); border-radius: 14px; overflow: hidden; }
 .hist-card .tx { padding: 10px 14px; }
-.hist-card .tx + .tx { border-top: 1px solid var(--b2); }
+.hist-card .tx-swipe-wrap + .tx-swipe-wrap { border-top-color: var(--b2); }
 
 /* ── QUESTS SCREEN ── */
 .screen-header {
@@ -1872,6 +1888,7 @@ html[data-theme="dark"] .hist-card {
   background: linear-gradient(155deg, #1A1A1A 0%, #111111 100%);
   border-color: rgba(255,107,0,.08);
 }
+html[data-theme="dark"] .hist-card .tx { background: #161616; }
 html[data-theme="dark"] .hist-search-box {
   background: #1A1A1A; border-color: rgba(255,107,0,.12);
 }

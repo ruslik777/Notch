@@ -679,21 +679,75 @@ export function renderHistory() {
           </div>
           <div class="hist-card">
             ${items.map(e => `
-              <div class="tx">
-                <div class="tx-ico">${e.icon}</div>
-                <div>
-                  <div class="tx-name">${highlight(e.catName, q)}</div>
-                  <div class="tx-cat">${highlight(e.note || '', q)}</div>
-                </div>
-                <div class="tx-amt">−${highlight(fmt(e.amount), q)}</div>
-                <button class="tx-edit" onclick="openEditById('${e.id}')">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <div class="tx-swipe-wrap">
+                <button class="tx-del-zone" onclick="deleteExpense('${e.id}')">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 </button>
-                <button class="tx-del" onclick="deleteExpense('${e.id}')">×</button>
+                <div class="tx">
+                  <div class="tx-ico">${e.icon}</div>
+                  <div>
+                    <div class="tx-name">${highlight(e.catName, q)}</div>
+                    <div class="tx-cat">${highlight(e.note || '', q)}</div>
+                  </div>
+                  <div class="tx-amt">−${highlight(fmt(e.amount), q)}</div>
+                  <button class="tx-edit" onclick="openEditById('${e.id}')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
               </div>`).join('')}
           </div>
         </div>`;
     }).join('');
+
+  _initHistSwipe(el);
+}
+
+function _closeSwipe(tx) {
+  if (!tx) return;
+  tx.style.transition = 'transform .25s var(--ease)';
+  tx.style.transform  = '';
+  tx.dataset.swipeOpen = '';
+}
+
+function _initHistSwipe(container) {
+  let startX, startY, curTx, dragging = false;
+  let openTx = null;
+
+  container.addEventListener('touchstart', e => {
+    const tx = e.target.closest('.tx-swipe-wrap .tx');
+    if (!tx) { _closeSwipe(openTx); openTx = null; return; }
+    startX   = e.touches[0].clientX;
+    startY   = e.touches[0].clientY;
+    curTx    = tx;
+    dragging = false;
+    tx.style.transition = 'none';
+  }, { passive: true });
+
+  container.addEventListener('touchmove', e => {
+    if (!curTx) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (!dragging && dy > Math.abs(dx)) { curTx = null; return; }
+    dragging = true;
+    const clamped = Math.max(Math.min(dx, 0), -76);
+    curTx.style.transform = `translateX(${clamped}px)`;
+  }, { passive: true });
+
+  container.addEventListener('touchend', e => {
+    if (!curTx || !dragging) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    curTx.style.transition = 'transform .25s var(--ease)';
+    if (dx < -48) {
+      curTx.style.transform = 'translateX(-76px)';
+      if (openTx && openTx !== curTx) _closeSwipe(openTx);
+      openTx = curTx;
+    } else {
+      _closeSwipe(curTx);
+      if (openTx === curTx) openTx = null;
+    }
+    curTx    = null;
+    dragging = false;
+  });
 }
 
 export function renderCurrencyGrid() {
