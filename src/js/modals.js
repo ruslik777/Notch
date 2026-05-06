@@ -1,7 +1,7 @@
 import { CATS, CAT_SVG, INCOME_TYPES, ACHIEVEMENTS } from './config.js';
 import { STATE, DB, AUTH, supa } from './api.js';
 import { _syncUser, _insertIncome, _insertExpense, _deleteIncome } from './api.js';
-import { toDay, fmt, getCur } from './format.js';
+import { toDay, fmt, getCur, haptic } from './format.js';
 import { addXP, incrementStreak, checkQuestCompletion, checkAchievements, getFinancialAge } from './gamification.js';
 import { showPostExpenseNudge } from './friends.js';
 import { renderSavingsGoals, renderFixedExps, renderAll } from './render.js';
@@ -127,6 +127,7 @@ export async function saveExpense() {
   const wasFirstToday = STATE.exps.filter(e => e.date === toDay()).length === 1;
   if (wasFirstToday && user.streak > 0) {
     setTimeout(() => addXP(15), 800);
+    setTimeout(() => haptic('streak'), 400);
   }
 
   checkQuestCompletion(expense);
@@ -134,7 +135,7 @@ export async function saveExpense() {
 
   closeModal();
   renderAll();
-  if (navigator.vibrate) navigator.vibrate(40);
+  haptic('confirm');
   const txsEl = document.getElementById('h-txs');
   if (txsEl) { txsEl.classList.add('tx-just-added'); setTimeout(() => txsEl.classList.remove('tx-just-added'), 600); }
   setTimeout(showPostExpenseNudge, 600);
@@ -142,6 +143,7 @@ export async function saveExpense() {
 
 export async function deleteExpense(id) {
   if (!confirm('Удалить эту запись?')) return;
+  haptic('delete');
   STATE.exps = STATE.exps.filter(e => e.id !== id);
   renderAll();
   try {
@@ -213,6 +215,7 @@ export async function saveIncome() {
   STATE.incomes.push(inc);
   _insertIncome(inc);
 
+  haptic('income');
   addXP(10);
   closeIncomeModal();
   renderAll();
@@ -236,6 +239,7 @@ export async function saveIncomeBanner() {
 
   STATE.incomes.push(inc);
   _insertIncome(inc);
+  haptic('income');
   addXP(10);
   localStorage.removeItem('income_banner_snooze');
 
@@ -676,6 +680,7 @@ export function openIncomeSheet() {
 }
 
 export async function deleteIncome(id) {
+  haptic('delete');
   STATE.incomes = (STATE.incomes || []).filter(i => String(i.id) !== String(id));
   _deleteIncome(id);
   const row = document.getElementById('inc-row-' + id);

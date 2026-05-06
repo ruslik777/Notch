@@ -42,3 +42,20 @@ export function pluralDays(n) {
   if ([2,3,4].includes(a % 10) && ![12,13,14].includes(a % 100)) return 'дня';
   return 'дней';
 }
+
+const HAPTICS = {
+  tap:         [20],
+  confirm:     [20, 20, 40],
+  delete:      [50, 30, 50],
+  income:      [30, 20, 100],
+  achievement: [40, 25, 40, 25, 90],
+  levelup:     [30, 20, 60, 20, 100, 20, 220],
+  streak:      [20, 15, 20, 15, 20],
+  error:       [80, 40, 80],
+};
+
+export function haptic(name) {
+  if (!navigator.vibrate) return;
+  const pattern = HAPTICS[name] || HAPTICS.tap;
+  navigator.vibrate(pattern);
+}

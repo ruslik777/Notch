@@ -1,6 +1,6 @@
 import { LEVELS, ACHIEVEMENTS, DAILY_QUEST_TEMPLATES, WEEKLY_QUEST } from './config.js';
 import { STATE, DB, AUTH, supa } from './api.js';
-import { toDay, fmt } from './format.js';
+import { toDay, fmt, haptic } from './format.js';
 
 export function getLevel(xp) {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
@@ -97,7 +97,7 @@ function _drainAchQueue() {
   document.getElementById('ach-toast-desc').textContent = a.desc;
   const el = document.getElementById('ach-toast');
   el.classList.add('show');
-  if (navigator.vibrate) navigator.vibrate([60, 30, 120]);
+  haptic('achievement');
   setTimeout(() => {
     el.classList.remove('show');
     setTimeout(() => { _achShowing = false; _drainAchQueue(); }, 350);
@@ -166,7 +166,7 @@ export function showLevelUp(levelInfo) {
   overlay.classList.remove('show');
   requestAnimationFrame(() => requestAnimationFrame(() => {
     overlay.classList.add('show');
-    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 200]);
+    haptic('levelup');
     setTimeout(_fireConfetti, 250);
   }));
 
