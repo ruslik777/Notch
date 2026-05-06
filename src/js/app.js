@@ -1,5 +1,5 @@
 import { STATE, DB, AUTH, supa, loadState, updateExchangeRates } from './api.js';
-import { renderAll, renderHome, renderProfile, renderFixedExps, renderSavingsGoals, renderCurrencyGrid } from './render.js';
+import { renderAll, renderHome, renderProfile, renderFixedExps, renderSavingsGoals, renderCurrencyGrid, setHistSearch } from './render.js';
 import { renderFriendsTab } from './friends.js';
 import {
   checkStreak, loadLeague, loadFriendsLeague,
@@ -76,6 +76,7 @@ export function switchTab(tab) {
   const navEl = document.getElementById('nav-' + tab);
   if (navEl) navEl.classList.add('active');
   document.getElementById('tab-content').scrollTop = 0;
+  if (tab !== 'history') setHistSearch('');
   renderAll();
   if (tab === 'quests')  { loadLeague(); loadFriendsLeague(); }
 }
@@ -306,6 +307,9 @@ Object.assign(window, {
 
   // render (used by api.js _applyRates, modals addFixedExp/removeFixedExp)
   renderAll, renderHome,
+
+  // history search
+  setHistSearch,
 
   // league
   loadLeague, loadFriendsLeague, scheduleStreakReminder,

@@ -598,6 +598,17 @@ export function renderQuests() {
     </div>`;
 }
 
+let _histSearchQuery = '';
+
+export function setHistSearch(q) {
+  _histSearchQuery = (q || '').toLowerCase().trim();
+  const clr = document.getElementById('hist-search-clear');
+  const inp = document.getElementById('hist-search');
+  if (clr) clr.style.display = _histSearchQuery ? '' : 'none';
+  if (inp && inp.value !== (q || '')) inp.value = q || '';
+  renderHistory();
+}
+
 export function renderHistory() {
   const exps = DB.getExps();
   const el   = document.getElementById('hist-content');
@@ -613,8 +624,27 @@ export function renderHistory() {
     return;
   }
 
+  const q = _histSearchQuery;
+  let filtered = exps;
+  if (q) {
+    filtered = exps.filter(e =>
+      String(e.amount).includes(q) ||
+      (e.catName || '').toLowerCase().includes(q) ||
+      (e.note    || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty-state empty-state-lg">
+      <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div class="empty-state-title">Ничего не найдено</div>
+      <div class="empty-state-sub">Попробуй другой запрос — сумму, категорию или заметку</div>
+    </div>`;
+    return;
+  }
+
   const groups = {};
-  [...exps].reverse().forEach(e => {
+  [...filtered].reverse().forEach(e => {
     if (!groups[e.date]) groups[e.date] = [];
     groups[e.date].push(e);
   });
@@ -626,6 +656,15 @@ export function renderHistory() {
     if (str === td2) return 'Сегодня';
     if (str === yd)  return 'Вчера';
     return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  };
+
+  const highlight = (text, q) => {
+    if (!q || !text) return text || '';
+    const idx = text.toLowerCase().indexOf(q);
+    if (idx === -1) return text;
+    return text.slice(0, idx) +
+      `<mark class="hist-hl">${text.slice(idx, idx + q.length)}</mark>` +
+      text.slice(idx + q.length);
   };
 
   el.innerHTML = Object.entries(groups)
@@ -643,10 +682,10 @@ export function renderHistory() {
               <div class="tx">
                 <div class="tx-ico">${e.icon}</div>
                 <div>
-                  <div class="tx-name">${e.catName}</div>
-                  <div class="tx-cat">${e.note || ''}</div>
+                  <div class="tx-name">${highlight(e.catName, q)}</div>
+                  <div class="tx-cat">${highlight(e.note || '', q)}</div>
                 </div>
-                <div class="tx-amt">−${fmt(e.amount)}</div>
+                <div class="tx-amt">−${highlight(fmt(e.amount), q)}</div>
                 <button class="tx-edit" onclick="openEditById('${e.id}')">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
