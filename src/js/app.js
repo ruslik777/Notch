@@ -35,6 +35,7 @@ import {
   openReceiptSheet, closeReceiptSheet, processReceiptImage,
   openReceiptCamera, closeReceiptCamera, captureReceiptPhoto,
   updateReceiptCat, removeReceiptItem, saveReceiptItems,
+  openCoachSheet, closeCoachSheet, sendCoachMessage, coachInputKeydown,
 } from './modals.js';
 import {
   submitAuth, signOut, confirmReset, switchAuthTab,
@@ -235,6 +236,9 @@ Object.assign(window, {
   openReceiptSheet, closeReceiptSheet, processReceiptImage,
   openReceiptCamera, closeReceiptCamera, captureReceiptPhoto,
   updateReceiptCat, removeReceiptItem, saveReceiptItems,
+
+  // AI coach
+  openCoachSheet, closeCoachSheet, sendCoachMessage, coachInputKeydown,
 
   // income modal
   openIncomeModal, closeIncomeModal, handleIncomeOverlayClick,

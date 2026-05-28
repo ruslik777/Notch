@@ -2,6 +2,9 @@
   command = "sed -i 's|__SUPABASE_URL__|'\"$SUPABASE_URL\"'|g' src/js/config.js && sed -i 's|__SUPABASE_ANON_KEY__|'\"$SUPABASE_ANON_KEY\"'|g' src/js/config.js"
   publish = "."
 
+[build.environment]
+  ANTHROPIC_API_KEY = ""
+
 [[headers]]
   for = "/app.html"
   [headers.values]

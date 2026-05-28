@@ -804,15 +804,376 @@ export function openGoalsSheet() {
     </div>`);
 }
 
-/* ── Receipt scanner — temporarily removed, see _receipt_scanner_backup.md ── */
+/* ── Receipt scanner ── */
 
-export function openReceiptSheet() { /* stub */ }
-export function closeReceiptSheet() { /* stub */ }
-export async function processReceiptImage() { /* stub */ }
-export async function openReceiptCamera() { /* stub */ }
-export function closeReceiptCamera() { /* stub */ }
-export function captureReceiptPhoto() { /* stub */ }
-export function updateReceiptCat() { /* stub */ }
-export function removeReceiptItem() { /* stub */ }
-export async function saveReceiptItems() { /* stub */ }
+let _receiptItems = [];
+
+export function openReceiptSheet() {
+  closeModal();
+  document.getElementById('receipt-overlay').classList.add('open');
+  document.getElementById('receipt-sheet').classList.add('open');
+  _setReceiptState('idle');
+}
+
+export function closeReceiptSheet() {
+  document.getElementById('receipt-overlay').classList.remove('open');
+  document.getElementById('receipt-sheet').classList.remove('open');
+  _receiptItems = [];
+}
+
+function _resc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _setReceiptState(state, errMsg) {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+
+  if (state === 'idle') {
+    body.innerHTML = `
+      <div class="rc-idle">
+        <div class="rc-idle-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/><path d="M15 15l-2-2-2 2"/></svg>
+        </div>
+        <div class="rc-idle-title">Скан чека</div>
+        <div class="rc-idle-sub">Claude AI распознает товары и расставит категории автоматически</div>
+        <div class="rc-idle-btns">
+          <button class="rc-upload-btn rc-cam-btn" onclick="openReceiptCamera()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Камера
+          </button>
+          <label class="rc-upload-btn" for="receipt-file-input">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Скриншот
+          </label>
+        </div>
+        <input type="file" id="receipt-file-input" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      </div>`;
+  } else if (state === 'loading') {
+    body.innerHTML = `
+      <div class="rc-loading">
+        <div class="rc-spinner"></div>
+        <div class="rc-loading-title rc-loading-text">Читаю файл…</div>
+        <div class="rc-loading-sub">Claude AI читает позиции и определяет категории</div>
+      </div>`;
+  } else if (state === 'error') {
+    body.innerHTML = `
+      <div class="rc-idle">
+        <div class="rc-idle-icon" style="color:var(--red)">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="rc-idle-title">Не удалось распознать</div>
+        <div class="rc-idle-sub">${_resc(errMsg || 'Попробуй ещё раз')}</div>
+        <div class="rc-idle-btns">
+          <button class="rc-upload-btn rc-cam-btn" onclick="openReceiptCamera()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Камера
+          </button>
+          <label class="rc-upload-btn" for="receipt-file-input2">Скриншот</label>
+        </div>
+        <input type="file" id="receipt-file-input2" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      </div>`;
+  } else if (state === 'results') {
+    _renderReceiptResults();
+  }
+}
+
+function _catOptions(selected) {
+  return CATS.map(c =>
+    `<option value="${c.id}" ${c.id === selected ? 'selected' : ''}>${c.name}</option>`
+  ).join('');
+}
+
+function _renderReceiptResults() {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+  const total = _receiptItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+
+  const rows = _receiptItems.map((item, idx) => `
+    <div class="rc-item" id="rc-item-${idx}">
+      <select class="rc-cat-sel" onchange="updateReceiptCat(${idx},this.value)">
+        ${_catOptions(item.cat)}
+      </select>
+      <div class="rc-item-mid">
+        <div class="rc-item-name">${_resc(item.name)}</div>
+        <div class="rc-item-amt">${fmt(item.amount)}</div>
+      </div>
+      <button class="rc-item-del" onclick="removeReceiptItem(${idx})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div class="rc-results">
+      <div class="rc-count">${_receiptItems.length} позиций · итого ${fmt(total)}</div>
+      <div class="rc-list">${rows}</div>
+    </div>`;
+
+  const footer = document.getElementById('receipt-footer');
+  if (footer) {
+    footer.style.display = '';
+    footer.innerHTML = `
+      <label class="rc-rescan-btn" for="receipt-file-input3">Другой скрин</label>
+      <input type="file" id="receipt-file-input3" accept="image/*" style="display:none" onchange="processReceiptImage(this)">
+      <button class="rc-save-btn" onclick="saveReceiptItems()">
+        Сохранить ${_receiptItems.length} ${_receiptItems.length === 1 ? 'трату' : _receiptItems.length < 5 ? 'траты' : 'трат'}
+      </button>`;
+  }
+}
+
+function _setReceiptLoadingText(text) {
+  const el = document.querySelector('.rc-loading-text');
+  if (el) el.textContent = text;
+}
+
+async function _sendReceiptToApi(file) {
+  _setReceiptLoadingText(`Читаю файл (${Math.round(file.size / 1024)} КБ)…`);
+  const bytes = await file.arrayBuffer();
+
+  const { data: { session } } = await supa.auth.getSession();
+  if (!session) throw new Error('Не авторизован');
+
+  _setReceiptLoadingText('Claude AI анализирует чек…');
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 55000);
+  let resp;
+  try {
+    resp = await fetch('/api/scan-receipt', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': file.type || 'image/jpeg',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: bytes,
+    });
+  } finally { clearTimeout(tid); }
+
+  let data;
+  try { data = await resp.json(); } catch {
+    throw new Error(`Сервер вернул ошибку (${resp.status})`);
+  }
+  if (!resp.ok || data.error) throw new Error(data.detail || data.error || `HTTP ${resp.status}`);
+  _receiptItems = (data.items || []).filter(i => i && i.amount > 0);
+  if (!_receiptItems.length) throw new Error('Позиции не найдены — попробуй другой скрин');
+  _setReceiptState('results');
+}
+
+export async function processReceiptImage(input) {
+  const file = input?.files?.[0];
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) {
+    _setReceiptState('error', 'Файл слишком большой — используй кнопку Камера');
+    return;
+  }
+  _setReceiptState('loading');
+  document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
+  try {
+    await _sendReceiptToApi(file);
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй через камеру' : err.message;
+    _setReceiptState('error', msg);
+  }
+}
+
+let _camStream = null;
+
+export async function openReceiptCamera() {
+  const body = document.getElementById('receipt-body');
+  if (!body) return;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    document.getElementById('receipt-file-input')?.click();
+    return;
+  }
+  try {
+    _camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false,
+    });
+    body.innerHTML = `
+      <div class="rc-camera">
+        <video id="rc-video" autoplay playsinline muted></video>
+        <div class="rc-cam-actions">
+          <button class="rc-rescan-btn" onclick="closeReceiptCamera()">Отмена</button>
+          <button class="rc-capture-btn" onclick="captureReceiptPhoto()">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+          </button>
+          <div style="width:72px"></div>
+        </div>
+      </div>`;
+    document.getElementById('rc-video').srcObject = _camStream;
+  } catch {
+    _setReceiptState('error', 'Нет доступа к камере — разреши в настройках');
+  }
+}
+
+export function closeReceiptCamera() {
+  _camStream?.getTracks().forEach(t => t.stop());
+  _camStream = null;
+  _setReceiptState('idle');
+}
+
+export function captureReceiptPhoto() {
+  const video = document.getElementById('rc-video');
+  if (!video) return;
+
+  const MAX = 900;
+  let w = video.videoWidth || 640;
+  let h = video.videoHeight || 480;
+  if (w > MAX || h > MAX) {
+    if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+    else        { w = Math.round(w * MAX / h); h = MAX; }
+  }
+
+  _camStream?.getTracks().forEach(t => t.stop());
+  _camStream = null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+
+  _setReceiptState('loading');
+  document.getElementById('receipt-footer')?.style.setProperty('display', 'none');
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) { _setReceiptState('error', 'Не удалось сделать снимок'); return; }
+    try {
+      await _sendReceiptToApi(new File([blob], 'receipt.jpg', { type: 'image/jpeg' }));
+    } catch (err) {
+      const msg = err.name === 'AbortError' ? 'Превышено время ожидания — попробуй ещё раз' : err.message;
+      _setReceiptState('error', msg);
+    }
+  }, 'image/jpeg', 0.82);
+}
+
+export function updateReceiptCat(idx, cat) {
+  if (_receiptItems[idx]) _receiptItems[idx].cat = cat;
+}
+
+export function removeReceiptItem(idx) {
+  _receiptItems.splice(idx, 1);
+  if (!_receiptItems.length) {
+    _setReceiptState('idle');
+    const footer = document.getElementById('receipt-footer');
+    if (footer) footer.style.display = 'none';
+  } else {
+    _renderReceiptResults();
+  }
+}
+
+export async function saveReceiptItems() {
+  if (!_receiptItems.length) return;
+  const btn = document.querySelector('.rc-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Сохраняем...'; }
+
+  const today = toDay();
+  for (const item of _receiptItems) {
+    const amt = parseFloat(item.amount);
+    if (!amt || amt <= 0) continue;
+    const cat = CATS.find(c => c.id === (item.cat || 'other')) || CATS[CATS.length - 1];
+    const exp = {
+      id:      Date.now() + Math.random(),
+      catId:   cat.id,
+      catName: cat.name,
+      icon:    CAT_SVG[cat.id] || '',
+      amount:  amt,
+      note:    item.name || '',
+      date:    today,
+    };
+    STATE.exps.push(exp);
+    addXP(5);
+    await _insertExpense(exp);
+  }
+
+  await checkQuestCompletion();
+  checkAchievements();
+  renderAll();
+  closeReceiptSheet();
+  setTimeout(showPostExpenseNudge, 600);
+}
+
+/* ── AI Coach ── */
+
+let _coachHistory = [];
+let _coachTyping = false;
+
+export function openCoachSheet() {
+  document.getElementById('coach-overlay').classList.add('open');
+  document.getElementById('coach-sheet').classList.add('open');
+  if (!_coachHistory.length) _renderCoachWelcome();
+  setTimeout(() => document.getElementById('coach-input')?.focus(), 300);
+}
+
+export function closeCoachSheet() {
+  document.getElementById('coach-overlay').classList.remove('open');
+  document.getElementById('coach-sheet').classList.remove('open');
+}
+
+function _renderCoachWelcome() {
+  const msgs = document.getElementById('coach-messages');
+  if (!msgs) return;
+  msgs.innerHTML = `
+    <div class="coach-msg coach-msg-bot">
+      <div class="coach-bubble">Привет! Я AI советник Notch. Спроси про свои расходы, бюджет или как сэкономить — отвечу на основе твоих реальных трат 💬</div>
+    </div>`;
+}
+
+function _renderCoachMessages() {
+  const msgs = document.getElementById('coach-messages');
+  if (!msgs) return;
+  msgs.innerHTML = _coachHistory.map(m => `
+    <div class="coach-msg ${m.role === 'user' ? 'coach-msg-user' : 'coach-msg-bot'}">
+      <div class="coach-bubble">${_resc(m.content)}</div>
+    </div>`).join('');
+  if (_coachTyping) {
+    msgs.innerHTML += `<div class="coach-msg coach-msg-bot"><div class="coach-bubble coach-typing"><span></span><span></span><span></span></div></div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+export async function sendCoachMessage() {
+  if (_coachTyping) return;
+  const input = document.getElementById('coach-input');
+  const msg = input?.value?.trim();
+  if (!msg) return;
+
+  input.value = '';
+  _coachHistory.push({ role: 'user', content: msg });
+  _coachTyping = true;
+  _renderCoachMessages();
+
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) throw new Error('no session');
+
+    const exps = STATE.exps.slice(-50).map(e => ({
+      cat: e.catId, amount: e.amount, date: e.date, note: e.note,
+    }));
+
+    const resp = await fetch('/api/ai-coach', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify({
+        message: msg,
+        history: _coachHistory.slice(-8),
+        expenses: exps,
+      }),
+    });
+
+    const data = await resp.json();
+    _coachHistory.push({ role: 'assistant', content: data.reply || 'Ошибка. Попробуй ещё раз.' });
+  } catch {
+    _coachHistory.push({ role: 'assistant', content: 'Нет соединения. Попробуй позже.' });
+  }
+
+  _coachTyping = false;
+  _renderCoachMessages();
+}
+
+export function coachInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCoachMessage(); }
+}
 

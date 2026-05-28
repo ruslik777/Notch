@@ -52,8 +52,8 @@ export default async function handler(req) {
   }).catch(() => null);
   if (!authCheck?.ok) return json({ error: 'Unauthorized' }, 401);
 
-  const groqKey = process.env.GROQ_API_KEY;
-  if (!groqKey) return json({ error: 'no_api_key' }, 500);
+  const claudeKey = process.env.ANTHROPIC_API_KEY;
+  if (!claudeKey) return json({ error: 'no_api_key' }, 500);
 
   let arrayBuffer;
   try { arrayBuffer = await req.arrayBuffer(); } catch {
@@ -63,23 +63,32 @@ export default async function handler(req) {
 
   const base64 = bufToBase64(new Uint8Array(arrayBuffer));
   const mimeType = (req.headers.get('content-type') || 'image/jpeg').split(';')[0];
+  // Claude supports: image/jpeg, image/png, image/gif, image/webp
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const mediaType = allowedMimes.includes(mimeType) ? mimeType : 'image/jpeg';
 
   let aiResp;
   try {
-    aiResp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    aiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${groqKey}`,
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-        messages: [{ role: 'user', content: [
-          { type: 'text', text: PROMPT },
-          { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}` } },
-        ]}],
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2048,
-        temperature: 0.1,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 },
+            },
+            { type: 'text', text: PROMPT },
+          ],
+        }],
       }),
     });
   } catch (e) {
@@ -92,9 +101,8 @@ export default async function handler(req) {
   }
 
   const aiData = await aiResp.json();
-  const raw = aiData.choices?.[0]?.message?.content ?? '';
+  const raw = aiData.content?.[0]?.text ?? '';
 
-  // find JSON array anywhere in the response
   const match = raw.match(/\[[\s\S]*\]/);
   if (!match) return json({ error: 'parse_error', detail: `raw: ${raw.slice(0, 400)}`, raw }, 422);
 
